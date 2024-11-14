@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Learning Text Reader</title>
+   <style>
+       /* Existing styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+    min-height: 100%;  /* This will reference the iframe's height instead */
+    height: 100%;
+}
+
+/* Top Bar Styles - Modified for all pages */
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: #2c3e50;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 3000;
+}
+
+/* Remove top bar hiding */
+body .page#readPage.active ~ .top-bar {
+    display: flex !important;
+}
+
+/* Overlay Styles */
+.overlay-page {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 50px);
+    background: white;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.overlay-page.active {
+    display: block;
+}
+
+.close-button {
+    position: fixed;
+    top: 45px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    z-index: 2999;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close-button:hover {
+    background: #f5f5f5;
+}
+
+/* Specific styles for read modal */
+#readPage .container {
+    max-width: 98%;
+    margin: 80px auto;
+    padding: 0;
+    overflow: hidden;
+}
+
+#readPage.overlay-page {
+    overflow: hidden;
+}
+
+#readPage .text-display-container {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: 10px;
+    min-height: calc(100vh - 100px);
+    overflow: hidden;
+}
+
+#readPage .page-content {
+    min-height: calc(100vh - 120px);
+    line-height: 1.6;
+    margin: 0;
+    overflow: hidden;
+}
+
+#readPage #textDisplay {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #333;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Hide title in reading modal */
+#readPage .text-title {
+    display: none;
+}
+
+.first-page .text-title {
+    display: none;
+}
+
+.known-words-counter {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.top-buttons {
+    display: none;
+}
+
+.top-buttons.visible {
+    display: flex;
+}
+
+.nav-button {
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.nav-button:hover {
+    background: #435d78;
+}
+
+/* Container Styles */
+.container {
+    max-width: 1000px;
+    margin: 60px auto 0;
+    padding: 20px;
+    padding-bottom: 80px;
+    height: calc(100vh - 110px);
+    overflow-y: auto;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.bottom-nav .nav-button {
+    flex: 1;
+    margin: 0 10px;
+    height: 40px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.bottom-nav .nav-button:first-child {
+    margin-left: 0;
+}
+
+.bottom-nav .nav-button:last-child {
+    margin-right: 0;
+}
+
+/* Home Page Styles */
+.home-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+}
+
+.home-title {
+    color: #2c3e50;
+    margin-bottom: 40px;
+    font-size: 2.5em;
+}
+
+.button-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 auto;
+    max-width: 600px;
+    width: 90%;
+}
+
+.home-button {
+    padding: 30px 20px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2c3e50;
+    color: white;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.home-button:hover {
+    transform: translateY(-2px);
+    background: #34495e;
+}
+
+.home-button:active {
+    transform: translateY(0);
+}
+
+/* Create Text Page Styles */
+.create-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.title-input-container {
+    margin-bottom: 20px;
+}
+
+.text-title-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 18px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.text-title-input:focus {
+    outline: none;
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
+}
+
+.text-title-input.error {
+    border-color: #e74c3c;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 5px;
+    display: none;
+}
+
+.error-message.visible {
+    display: block;
+}
+
+#textInput {
+    width: 100%;
+    height: 400px;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.button-container {
+    display: flex;
+    gap: 10px;
+}
+
+.action-button {
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.save-button {
+    background: #4CAF50;
+    color: white;
+}
+
+.save-button:hover {
+    background: #45a049;
+}
+
+.cancel-button {
+    background: #e74c3c;
+    color: white;
+}
+
+.cancel-button:hover {
+    background: #c0392b;
+}
+
+/* Pagination Styles */
+.pagination-controls {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 0;
+    background: white;
+    z-index: 99;
+    border-bottom: 1px solid #eee;
+}
+
+.pagination-controls span {
+    color: #666;
+    font-size: 14px;
+    display: inline-block;
+}
+
+/* Word knowledge levels */
+.word-new { background-color: #a8d5ff; }
+.word-untracked { background-color: transparent;}
+.word-level-1 { background-color: #fff176; }
+.word-level-2 { background-color: #ffd54f; }
+.word-level-3 { background-color: #ffb300; }
+.word-level-4 { background-color: #c5e1a5; }
+.word-level-5 { background-color: #81c784; }
+
+/* Rating Overlay Styles */
+.rating-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 2001;
+}
+
+.rating-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.selected-word {
+    font-size: 24px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.definition-section {
+    margin: 15px 0;
+}
+
+.suggested-translation {
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.custom-definition {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.rating-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.rating-button {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: transform 0.2s;
+    color: #333;
+}
+
+.rating-button:hover {
+    transform: scale(1.1);
+}
+
+.rating-button.level-1 { background-color: #fff176; }
+.rating-button.level-2 { background-color: #ffd54f; }
+.rating-button.level-3 { background-color: #ffb300; }
+.rating-button.level-4 { background-color: #c5e1a5; }
+.rating-button.level-5 { background-color: #81c784; }
+
+/* Text Library Styles */
+.text-library {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-library .action-button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+}
+
+.text-library .action-button:hover {
+    background: #2980b9;
+}
+
+.text-library .action-button:last-child {
+    background: #e74c3c;
+}
+
+.text-library .action-button:last-child:hover {
+    background: #c0392b;
+}
+
+/* Sentence Mode Styles */
+.sentence-mode-overlay {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    background: white;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.sentence-box {
+    height: 100%;
+    padding: 60px 20px 20px 20px;
+    overflow-y: auto;
+}
+
+.sentence-section {
+    margin-bottom: 30px;
+}
+
+.sentence-section h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.translation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sentence-content {
+    font-size: 20px;
+    line-height: 1.6;
+    min-height: 50px;
+}
+
+.sentence-translation {
+    font-size: 18px;
+    color: #666;
+    margin: 10px 0;
+    font-style: italic;
+    padding: 10px;
+}
+
+.translation-section.hidden .sentence-translation {
+    display: none;
+}
+
+.sentence-close {
+    position: fixed;
+    top: 45px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    padding: 10px;
+    border-radius: 4px;
+    z-index: 2999;
+}
+
+.sentence-close:hover {
+    background: #f5f5f5;
+}
+
+.nav-arrow {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, transform 0.1s;
+    min-width: 120px;
+}
+
+.nav-arrow:hover {
+    background: #34495e;
+    transform: translateY(-1px);
+}
+
+.nav-arrow:active {
+    transform: translateY(0);
+}
+
+#sentenceCounter {
+    color: #666;
+    font-size: 14px;
+    padding: 0 20px;
+    flex: 0 0 auto;
+}
+
+.sentence-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2002;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+/* Adjust sentence box to account for fixed navigation */
+.sentence-box {
+    padding-bottom: 100px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.dont-track-button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+    margin-top: 10px;
+}
+
+.dont-track-button:hover {
+    background: #c0392b;
+}
+
+.mark-new-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.mark-new-button:hover {
+    background: #45a049;
+}
+
+/* File input styles */
+.file-input {
+    display: none;
+}
+
+/* Page visibility styles */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+/* Status message styles */
+.status-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #2c3e50;
+    color: white;
+    border-radius: 4px;
+    display: none;
+    z-index: 3000;
+}
+
+/* Sentence highlighting in text */
+.sentence-highlight {
+    background-color: rgba(231, 76, 60, 0.2);
+    border-radius: 4px;
+}
+
+/* Modified container style for overlays */
+.overlay-page .container {
+    margin-top: 20px;
+    padding: 20px;
+}
+
+/* Bottom nav modification */
+.bottom-nav {
+    display: none;
+}
+
+#readPage .bottom-nav {
+    display: flex;
+}
+
+/* Vocabulary table styles */
+.vocabulary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.vocabulary-table th,
+.vocabulary-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.vocabulary-table th {
+    background: #f5f5f5;
+}
+
+/* Search and filter styles */
+.search-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.level-filter {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+    </style>
+</head>
+<body>
+    <!-- Top Bar - Simplified -->
+    <div class="top-bar">
+        <div class="known-words-counter">Known Words: <span id="knownWordsCount">0</span></div>
+    </div>
+
+    <!-- Home Page - Remains as is -->
+    <div id="homePage" class="page active">
+        <div class="home-container">
+            <div class="button-grid">
+                <input type="file" id="loadTextInput" class="file-input" accept=".txt">
+                <input type="file" id="loadVocabInput" class="file-input" accept=".json">
+                
+                <button class="home-button" onclick="document.getElementById('loadTextInput').click()">
+                    Load Text
+                </button>
+                <button class="home-button" onclick="showPage('create')">
+                    Create Text
+                </button>
+                <button class="home-button" onclick="saveVocabulary()">
+                    Save Vocabulary
+                </button>
+                <button class="home-button" onclick="document.getElementById('loadVocabInput').click()">
+                    Load Vocabulary
+                </button>
+                <button class="home-button" onclick="showVocabularyOverview()">
+                    View Vocabulary List
+                </button>
+                <button class="home-button" onclick="showTextLibrary()">
+                    My Texts
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Text Overlay -->
+    <div id="createPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="create-container">
+                <div class="title-input-container">
+                    <input type="text" 
+                           id="textTitle" 
+                           placeholder="Enter title for your text..." 
+                           class="text-title-input"
+                           required>
+                </div>
+                <textarea id="textInput" placeholder="Write or paste your text here..."></textarea>
+                <div class="button-container">
+                    <button class="action-button save-button" onclick="saveAndRead()">Save & Continue to Reading</button>
+                    <button class="action-button cancel-button" onclick="showPage('home')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Read Text Overlay -->
+    <div id="readPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="text-display-container">
+                <h2 id="textDisplayTitle" class="text-title"></h2>
+                <div id="textDisplay"></div>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <button class="nav-button" onclick="changePage(-1)">Previous</button>
+            <button class="nav-button sentence-mode-toggle" onclick="toggleSentenceMode()">Sentence Mode</button>
+            <button class="nav-button" onclick="changePage(1)">Next</button>
+        </div>
+    </div>
+
+    <!-- Text Library Overlay -->
+    <div id="textLibraryPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="text-library">
+                <h2 class="overview-title">My Texts</h2>
+                <div class="filter-section">
+                    <input type="text" id="textSearch" placeholder="Search texts..." class="search-input">
+                </div>
+                <table id="textLibraryTable" class="vocabulary-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Date Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vocabulary Overview Overlay -->
+    <div id="vocabularyOverviewPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="vocabulary-overview">
+                <h2 class="overview-title">Vocabulary Overview</h2>
+                <div class="filter-section">
+                    <input type="text" id="vocabularySearch" placeholder="Search words..." class="search-input">
+                    <select id="levelFilter" class="level-filter">
+                        <option value="all">All Levels</option>
+                        <option value="0">New Words</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+                <table id="vocabularyTable" class="vocabulary-table">
+                    <thead>
+                        <tr>
+                            <th>Spanish Word</th>
+                            <th>Translation</th>
+                            <th>Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+     <!-- Word Rating Modal -->
+    <div id="ratingOverlay" class="rating-overlay">
+        <div class="rating-box">
+            <div class="selected-word"></div>
+            <div class="definition-section">
+                <div class="suggested-translation">Suggested: <span class="word-translation">Translating...</span></div>
+                <input type="text" class="custom-definition" placeholder="Enter custom definition (optional)">
+            </div>
+            <div>Rate how well you know this word:</div>
+            <div class="rating-buttons">
+                <button class="rating-button level-1" onclick="rateWord(1)">1</button>
+                <button class="rating-button level-2" onclick="rateWord(2)">2</button>
+                <button class="rating-button level-3" onclick="rateWord(3)">3</button>
+                <button class="rating-button level-4" onclick="rateWord(4)">4</button>
+                <button class="rating-button level-5" onclick="rateWord(5)">5</button>
+            </div>
+           <button class="dont-track-button" onclick="markAsUntracked()">Don't add to vocabulary</button>
+        </div>
+    </div>
+
+    <!-- Sentence Mode Overlay -->
+    <div id="sentenceModeOverlay" class="sentence-mode-overlay">
+        <button class="close-button" onclick="closeSentenceMode()">×</button>
+        <div class="sentence-box">
+            <div class="sentence-section">
+                <h3>Spanish</h3>
+                <div class="sentence-content"></div>
+            </div>
+            
+            <div class="sentence-section translation-section">
+                <div class="translation-header">
+                    <h3>English</h3>
+                    <button class="toggle-translation-btn" onclick="toggleTranslation()">
+                        <span class="toggle-icon">👁️</span>
+                    </button>
+                </div>
+                <div class="sentence-translation"></div>
+            </div>
+
+            <div class="sentence-navigation">
+                <button class="nav-arrow" onclick="navigateSentence(-1)">
+                    ← Previous
+                </button>
+                <span id="sentenceCounter"></span>
+                <button class="nav-arrow" onclick="navigateSentence(1)">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
+    <script>
+        // Update the showPage function to handle overlays
+        function showPage(pageId) {
+            // Hide all pages and overlays
+            document.querySelectorAll('.page, .overlay-page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Show selected page/overlay
+            if (pageId === 'home') {
+                document.getElementById('homePage').classList.add('active');
+            } else {
+                document.getElementById(pageId + 'Page').classList.add('active');
+            }
+        }
+
+        // Include all your existing JavaScript code here...
+       // Global variables
+        let vocabulary = {};
+        let textLibrary = {};
+        let currentWord = null;
+        let currentElement = null;
+        let sentenceMode = false;
+        let sentences = [];
+        let currentSentenceIndex = 0;
+        let lastClickedSentenceIndex = 0;
+        let currentOverlayWord = null;
+        let currentOverlayElement = null;
+        let translationVisible = false;
+        let currentPage = 0;
+        let pages = [];
+        const CHARS_PER_PAGE = 450;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVocabulary();
+            loadTextLibrary();
+            showPage('home');
+
+            // Add event listeners for file inputs
+            document.getElementById('loadTextInput').addEventListener('change', handleTextFileUpload);
+            document.getElementById('loadVocabInput').addEventListener('change', handleVocabFileUpload);
+
+            const draftText = localStorage.getItem('draftText');
+            if (draftText) {
+                try {
+                    const draft = JSON.parse(draftText);
+                    document.getElementById('textInput').value = draft.content || '';
+                    document.getElementById('textTitle').value = draft.title || '';
+                } catch (e) {
+                    document.getElementById('textInput').value = draftText;
+                }
+            }
+        });
+
+        // Status message handling
+        function showStatus(message, duration = 3000) {
+            const status = document.getElementById('statusMessage');
+            status.textContent = message;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, duration);
+        }
+      
+// Function to save text as a file
+function saveTextAsFile(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function saveAndRead() {
+    const title = document.getElementById('textTitle').value.trim();
+    const content = document.getElementById('textInput').value.trim();
+    
+    // Validate inputs
+    if (!title) {
+        showStatus('Please enter a title for your text');
+        return;
+    }
+    
+    if (!content) {
+        showStatus('Please enter some text content');
+        return;
+    }
+    
+    // Create a unique ID for the text
+    const textId = Date.now().toString();
+    
+    // Save to text library
+    const textData = {
+        id: textId,
+        title: title,
+        content: content,
+        dateCreated: new Date().toISOString()
+    };
+    
+    textLibrary[textId] = textData;
+    saveTextLibrary();
+    
+    // Save as .txt file
+    saveTextAsFile(content, title);
+    
+    // Clear the draft from localStorage
+    localStorage.removeItem('draftText');
+    
+    // Process and display the text
+    processText(content, title);
+    
+    // Switch to read page
+    showPage('read');
+    
+    showStatus('Text saved successfully!');
+    
+    // Clear the create form
+    document.getElementById('textTitle').value = '';
+    document.getElementById('textInput').value = '';
+}
+
+        // Translation functions
+        async function translateWord(word) {
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=es|en`);
+                const data = await response.json();
+                return data.responseData.translatedText;
+            } catch (error) {
+                console.error('Translation error:', error);
+                return 'Translation failed';
+            }
+        }
+
+        async function translateSentence(sentence) {
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentence)}&langpair=es|en`);
+                const data = await response.json();
+                return data.responseData.translatedText;
+            } catch (error) {
+                console.error('Translation error:', error);
+                return 'Translation failed';
+            }
+        }
+
+        // Vocabulary management
+        function loadVocabulary() {
+            const savedVocab = localStorage.getItem('vocabulary');
+            if (savedVocab) {
+                vocabulary = JSON.parse(savedVocab);
+                updateKnownWordsCount();
+            }
+        }
+
+        function loadTextLibrary() {
+            const savedLibrary = localStorage.getItem('textLibrary');
+            if (savedLibrary) {
+                textLibrary = JSON.parse(savedLibrary);
+            }
+        }
+
+        function saveVocabulary() {
+            try {
+                localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+                
+                const blob = new Blob([JSON.stringify(vocabulary, null, 2)], 
+                    { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'vocabulary.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showStatus('Progress saved!');
+            } catch (err) {
+                showStatus('Error saving progress');
+                console.error('Error:', err);
+            }
+        }
+
+        function saveTextLibrary() {
+            localStorage.setItem('textLibrary', JSON.stringify(textLibrary));
+        }
+
+        function updateKnownWordsCount() {
+            const knownWords = Object.values(vocabulary)
+                .filter(word => word.level >= 4).length;
+            document.getElementById('knownWordsCount').textContent = knownWords;
+        }
+
+        async function handleTextFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const title = file.name.replace('.txt', '');
+                
+                // Save to library
+                const textId = Date.now().toString();
+                const textData = {
+                    id: textId,
+                    title: title,
+                    content: text,
+                    dateCreated: new Date().toISOString()
+                };
+                
+                textLibrary[textId] = textData;
+                saveTextLibrary();
+
+                // Process and display the text
+                processText(text, title);
+                showPage('read');
+                showStatus('Text loaded successfully!');
+                
+                // Reset file input
+                event.target.value = '';
+            } catch (error) {
+                console.error('Error reading text file:', error);
+                showStatus('Error loading text file');
+            }
+        }
+
+        async function handleVocabFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const content = await file.text();
+                const newVocabulary = JSON.parse(content);
+                
+                vocabulary = { ...vocabulary, ...newVocabulary };
+                localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+                
+                updateKnownWordsCount();
+                showStatus('Vocabulary loaded successfully!');
+                
+                event.target.value = '';
+            } catch (error) {
+                console.error('Error reading vocabulary file:', error);
+                showStatus('Error loading vocabulary file');
+            }
+        }
+
+        // Text handling and pagination functions
+        function paginateText(sentences) {
+            pages = [];
+            let currentPageText = '';
+            let currentPageSentences = [];
+            
+            sentences.forEach((sentence, sentenceIndex) => {
+                if ((currentPageText + ' ' + sentence).length > CHARS_PER_PAGE) {
+                    if (currentPageText) {
+                        pages.push({
+                            text: currentPageText.trim(),
+                            sentences: currentPageSentences
+                        });
+                    }
+                    currentPageText = sentence;
+                    currentPageSentences = [sentenceIndex];
+                } else {
+                    currentPageText += (currentPageText ? ' ' : '') + sentence;
+                    currentPageSentences.push(sentenceIndex);
+                }
+            });
+            
+            if (currentPageText) {
+                pages.push({
+                    text: currentPageText.trim(),
+                    sentences: currentPageSentences
+                });
+            }
+            
+            return pages;
+        }
+
+       function displayCurrentPage() {
+    const display = document.getElementById('textDisplay');
+    const page = pages[currentPage];
+    
+    if (!page) return;
+    
+    const pageContent = page.sentences.map(sentenceIdx => {
+        const sentence = sentences[sentenceIdx];
+        const words = sentence.match(/\S+/g) || [];
+        
+        const processedWords = words.map(word => {
+            const originalWord = word;
+            const cleanWord = word.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+            const vocabEntry = vocabulary[cleanWord.toLowerCase()];
+            
+            // If in vocabulary, use its level. If not, it's new (blue)
+            let levelClass = 'word-new';  // Default is blue for new words
+            if (vocabEntry) {
+                // If it's in vocabulary, use its level
+                levelClass = vocabEntry.level === 'untracked' ? 'word-untracked' : 
+                           (vocabEntry.level === 0 ? 'word-new' : `word-level-${vocabEntry.level}`);
+            }
+            
+            return `<span class="${levelClass}" 
+                data-sentence-index="${sentenceIdx}"
+                onclick="handleTextClick(this, '${encodeURIComponent(cleanWord)}')">${originalWord}</span>`;
+        }).join(' ');
+        
+        return `<span class="sentence" data-sentence-index="${sentenceIdx}">${processedWords}</span>`;
+    }).join(' ');
+    
+    display.innerHTML = `
+        <div class="pagination-controls">
+            <span>Page ${currentPage + 1} of ${pages.length}</span>
+        </div>
+        <div class="page-content">${pageContent}</div>
+    `;
+}
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 0 && newPage < pages.length) {
+                currentPage = newPage;
+                displayCurrentPage();
+            }
+        }
+
+        function processText(text, title = '') {
+            sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+            sentences = sentences.map(s => s.trim());
+            
+            pages = paginateText(sentences);
+            currentPage = 0;
+            
+            const titleElement = document.getElementById('textDisplayTitle');
+            titleElement.textContent = title || 'Untitled Text';
+            
+            displayCurrentPage();
+        }
+
+        // Handle text clicks and word rating
+        function handleTextClick(element, encodedWord) {
+            const sentenceIndex = parseInt(element.closest('.sentence').dataset.sentenceIndex);
+            lastClickedSentenceIndex = sentenceIndex;
+            
+            if (sentenceMode) {
+                showSentenceOverlay(sentenceIndex);
+            } else {
+                handleWordClick(element, encodedWord);
+            }
+        }
+
+        async function handleWordClick(element, encodedWord) {
+            if (!encodedWord) return;
+            
+            const word = decodeURIComponent(encodedWord);
+            currentWord = word;
+            currentElement = element;
+            
+            const overlay = document.getElementById('ratingOverlay');
+            const wordEntry = vocabulary[word.toLowerCase()];
+            
+            overlay.querySelector('.selected-word').textContent = word;
+            overlay.style.display = 'block';
+            
+            if (wordEntry && wordEntry.definition) {
+                overlay.querySelector('.word-translation').textContent = wordEntry.definition;
+                overlay.querySelector('.custom-definition').value = wordEntry.definition;
+            } else {
+                overlay.querySelector('.word-translation').textContent = 'Loading...';
+                overlay.querySelector('.custom-definition').value = '';
+                
+                try {
+                    const translation = await translateWord(word);
+                    if (currentWord === word) {
+                        overlay.querySelector('.word-translation').textContent = translation;
+                    }
+                } catch (error) {
+                    console.error('Translation error:', error);
+                    overlay.querySelector('.word-translation').textContent = 'Translation failed';
+                }
+            }
+        }
+
+        // Sentence mode functions
+        function toggleSentenceMode() {
+            sentenceMode = !sentenceMode;
+            
+            if (sentenceMode) {
+                showSentenceOverlay(lastClickedSentenceIndex || 0);
+            } else {
+                closeSentenceMode();
+            }
+        }
+
+   async function showSentenceOverlay(index) {
+    currentSentenceIndex = index;
+    const overlay = document.getElementById('sentenceModeOverlay');
+    const sentence = sentences[index];
+    
+    const words = sentence.match(/\S+/g) || [];
+    const content = overlay.querySelector('.sentence-content');
+    content.innerHTML = words.map(word => {
+        const originalWord = word;
+        const cleanWord = word.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+        const vocabEntry = vocabulary[cleanWord.toLowerCase()];
+        
+        // If in vocabulary, use its level. If not, it's new (blue)
+        let levelClass = 'word-new';  // Default is blue for new words
+        if (vocabEntry) {
+            // If it's in vocabulary, use its level
+            levelClass = vocabEntry.level === 'untracked' ? 'word-untracked' : 
+                       (vocabEntry.level === 0 ? 'word-new' : `word-level-${vocabEntry.level}`);
+        }
+        
+        return `<span class="${levelClass}" 
+            onclick="handleOverlayWordClick(this, '${encodeURIComponent(cleanWord)}')">${originalWord}</span>`;
+    }).join(' ');
+    
+    overlay.style.display = 'block';
+    updateSentenceNavigation();
+    
+    const translationDiv = overlay.querySelector('.sentence-translation');
+    translationDiv.textContent = 'Translating...';
+    document.querySelector('.translation-section').classList.add('hidden');
+    translationVisible = false;
+    
+    translateSentence(sentence).then(translation => {
+        if (currentSentenceIndex === index) {
+            translationDiv.textContent = translation;
+        }
+    }).catch(error => {
+        console.error('Translation error:', error);
+        if (currentSentenceIndex === index) {
+            translationDiv.textContent = 'Translation failed';
+        }
+    });
+}
+
+        function toggleTranslation() {
+            translationVisible = !translationVisible;
+            const translationSection = document.querySelector('.translation-section');
+            translationSection.classList.toggle('hidden');
+        }
+
+        function updateSentenceNavigation() {
+            const counter = document.getElementById('sentenceCounter');
+            counter.textContent = `${currentSentenceIndex + 1} / ${sentences.length}`;
+        }
+
+     function navigateSentence(direction) {
+    const newIndex = currentSentenceIndex + direction;
+    if (newIndex >= 0 && newIndex < sentences.length) {
+        currentSentenceIndex = newIndex;
+        showSentenceOverlay(currentSentenceIndex);  // Remove await
+    }
+}
+
+        function closeSentenceMode() {
+            document.getElementById('sentenceModeOverlay').style.display = 'none';
+            document.querySelectorAll('.sentence-highlight').forEach(el => {
+                el.classList.remove('sentence-highlight');
+            });
+            sentenceMode = false;
+        }
+        
+        function handleOverlayWordClick(element, encodedWord) {
+    if (!encodedWord) return;
+    
+    const word = decodeURIComponent(encodedWord);
+    currentWord = word;
+    currentElement = element;
+    
+    const overlay = document.getElementById('ratingOverlay');
+    const wordEntry = vocabulary[word.toLowerCase()];
+    
+    overlay.querySelector('.selected-word').textContent = word;
+    overlay.style.display = 'block';
+    
+    if (wordEntry && wordEntry.definition) {
+        overlay.querySelector('.word-translation').textContent = wordEntry.definition;
+        overlay.querySelector('.custom-definition').value = wordEntry.definition;
+    } else {
+        overlay.querySelector('.word-translation').textContent = 'Loading...';
+        overlay.querySelector('.custom-definition').value = '';
+        
+        translateWord(word).then(translation => {
+            if (currentWord === word) {
+                overlay.querySelector('.word-translation').textContent = translation;
+            }
+        }).catch(error => {
+            console.error('Translation error:', error);
+            overlay.querySelector('.word-translation').textContent = 'Translation failed';
+        });
+    }
+}
+
+        // Word rating functions
+    function updateWordRating(word, element, level) {
+    // First remove all possible classes
+    element.classList.remove('word-new', 'word-level-1', 'word-level-2', 
+        'word-level-3', 'word-level-4', 'word-level-5', 'word-untracked');
+    
+    // Add the appropriate class based on level
+    if (level === 'untracked') {
+        element.classList.add('word-untracked');
+    } else {
+        element.classList.add(level === 0 ? 'word-new' : `word-level-${level}`);
+    }
+    
+    const wordKey = word.toLowerCase();
+    
+    // Handle vocabulary updates
+    if (level === 'untracked') {
+        delete vocabulary[wordKey];
+    } else {
+        const customDefinition = document.querySelector('.custom-definition').value;
+        const suggestedDefinition = document.querySelector('.word-translation').textContent;
+        
+        vocabulary[wordKey] = {
+            word: word,
+            level: level,
+            timestamp: new Date().toISOString(),
+            definition: customDefinition || suggestedDefinition
+        };
+    }
+
+    // Update all instances of this word in both views
+    document.querySelectorAll('#textDisplay span, .sentence-content span, .sentence span').forEach(span => {
+        const spanWord = span.textContent.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+        if (spanWord.toLowerCase() === wordKey) {
+            if (level === 'untracked') {
+                span.className = 'word-untracked';
+            } else {
+                span.className = level === 0 ? 'word-new' : `word-level-${level}`;
+            }
+        }
+    });
+
+    updateKnownWordsCount();
+    localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+}
+
+        function closeRating() {
+            document.getElementById('ratingOverlay').style.display = 'none';
+            currentWord = null;
+            currentElement = null;
+        }
+
+        function rateWord(level) {
+            if (currentElement && currentWord) {
+                updateWordRating(currentWord, currentElement, level);
+            }
+            closeRating();
+        }
+
+    function markAsUntracked() {
+    if (currentElement && currentWord) {
+        const wordKey = currentWord.toLowerCase();
+        
+        // Instead of deleting, store with untracked level
+        vocabulary[wordKey] = {
+            word: currentWord,
+            level: 'untracked',
+            timestamp: new Date().toISOString()
+        };
+
+        // Update all instances of this word in both views
+        document.querySelectorAll('#textDisplay span, .sentence-content span, .sentence span').forEach(span => {
+            const spanWord = span.textContent.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+            if (spanWord.toLowerCase() === wordKey) {
+                span.className = 'word-untracked';
+            }
+        });
+
+        updateKnownWordsCount();
+        localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+    }
+    closeRating();
+}
+        function markAsNew() {
+            if (currentElement && currentWord) {
+                updateWordRating(currentWord, currentElement, 0);
+            }
+            closeRating();
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+          // Search and filter event listeners
+            document.getElementById('vocabularySearch')?.addEventListener('input', updateVocabularyTable);
+            document.getElementById('levelFilter')?.addEventListener('change', updateVocabularyTable);
+            document.getElementById('textSearch')?.addEventListener('input', updateTextLibraryTable);
+
+            // Overlay click handlers
+            document.getElementById('ratingOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeRating();
+                }
+            });
+
+            document.getElementById('sentenceModeOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeSentenceMode();
+                }
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('ratingOverlay').style.display === 'block') {
+                if (e.key >= '1' && e.key <= '5') {
+                    rateWord(parseInt(e.key));
+                } else if (e.key === 'n') {
+                    markAsNew();
+                } else if (e.key === 'Escape') {
+                    closeRating();
+                }
+            } else if (document.getElementById('sentenceModeOverlay').style.display === 'block') {
+                if (e.key === 'ArrowLeft') {
+                    navigateSentence(-1);
+                } else if (e.key === 'ArrowRight') {
+                    navigateSentence(1);
+                } else if (e.key === 'Escape') {
+                    closeSentenceMode();
+                } else if (e.key === 't') {
+                    toggleTranslation();
+                }
+            }
+        });
+
+        // Text Library functions
+        function showTextLibrary() {
+            showPage('textLibrary');
+            updateTextLibraryTable();
+        }
+
+        function updateTextLibraryTable() {
+            const tbody = document.querySelector('#textLibraryTable tbody');
+            const searchTerm = document.getElementById('textSearch')?.value?.toLowerCase() || '';
+            
+            tbody.innerHTML = '';
+            
+            Object.entries(textLibrary)
+                .filter(([id, text]) => 
+                    text.title.toLowerCase().includes(searchTerm))
+                .sort((a, b) => new Date(b[1].dateCreated) - new Date(a[1].dateCreated))
+                .forEach(([id, text]) => {
+                    const row = document.createElement('tr');
+                    const date = new Date(text.dateCreated).toLocaleDateString();
+                    row.innerHTML = `
+                        <td>${text.title}</td>
+                        <td>${date}</td>
+                        <td>
+                            <button class="action-button" onclick="openText('${id}')">Open</button>
+                            <button class="action-button" onclick="deleteText('${id}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+        }
+
+        function openText(textId) {
+            const text = textLibrary[textId];
+            if (text) {
+                processText(text.content, text.title);
+                showPage('read');
+            }
+        }
+
+        function deleteText(textId) {
+            if (confirm('Are you sure you want to delete this text?')) {
+                delete textLibrary[textId];
+                saveTextLibrary();
+                updateTextLibraryTable();
+            }
+        }
+
+        // Vocabulary overview functions
+        function showVocabularyOverview() {
+            showPage('vocabularyOverview');
+            updateVocabularyTable();
+        }
+
+        function updateVocabularyTable() {
+            const tbody = document.querySelector('#vocabularyTable tbody');
+            const searchTerm = document.getElementById('vocabularySearch').value.toLowerCase();
+            const levelFilter = document.getElementById('levelFilter').value;
+            
+            tbody.innerHTML = '';
+            
+            Object.entries(vocabulary)
+                .filter(([key, entry]) => {
+                    const matchesSearch = entry.word.toLowerCase().includes(searchTerm) ||
+                        (entry.definition || '').toLowerCase().includes(searchTerm);
+                    const matchesLevel = levelFilter === 'all' || entry.level.toString() === levelFilter;
+                    return matchesSearch && matchesLevel;
+                })
+                .sort((a, b) => a[1].word.localeCompare(b[1].word))
+                .forEach(([key, entry]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${entry.word}</td>
+                        <td>${entry.definition || 'No definition'}</td>
+                        <td>${entry.level}</td>
+                        <td>
+                            <button class="edit-definition" onclick="editDefinition('${entry.word}')">
+                                Edit
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+        }
+
+        function editDefinition(word) {
+            currentWord = word;
+            const entry = vocabulary[word.toLowerCase()];
+            
+            const overlay = document.getElementById('ratingOverlay');
+            overlay.querySelector('.selected-word').textContent = word;
+            overlay.querySelector('.word-translation').textContent = entry.definition || 'No definition';
+            overlay.querySelector('.custom-definition').value = entry.definition || '';
+            
+            overlay.style.display = 'block';
+        }
+
+        // Auto-save draft
+        setInterval(() => {
+            const text = document.getElementById('textInput').value;
+            const title = document.getElementById('textTitle').value;
+            if (text.trim() || title.trim()) {
+                localStorage.setItem('draftText', JSON.stringify({
+                    title: title,
+                    content: text
+                }));
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talen met Rick</title>
+    <link rel="stylesheet" href="Index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+</head>
+<body>
+  <div class="top-bar">
+    <div class="streak-counter">
+        <span id="streakIcon">🔥</span>
+        <span id="streakCount">0</span> day streak
+    </div>
+</div>
+    <div class="app-container">
+        
+        <div id="main-content">
+            <!-- Days overview - shown by default -->
+            <div id="days-overview">
+
+                <div class="day-tile" onclick="showDayContent(1)">
+                    <div>
+                        <h2>Day 1</h2>
+                        <p>3 exercises</p>
+                    </div>
+                    <div id="day1-badge" class="completion-badge">
+                        In Progress
+                    </div>
+                </div>
+
+  <!-- Update this Day 2 tile -->
+<div class="day-tile locked">
+    <div>
+        <h2>Day 2</h2>
+        <p>3 exercises</p>
+        <p>Requirements: Complete all Day 1 exercises</p>
+    </div>
+    <div id="day2-badge" class="completion-badge">
+        Locked
+    </div>
+</div>
+
+                <div class="day-tile locked">
+                    <div>
+                        <h2>Day 3</h2>
+                        <p>1 exercise</p>
+                        <p>Requirements: Complete Day 1 & 2</p>
+                    </div>
+                    <div class="completion-badge">
+                        Locked
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 1 content - hidden by default -->
+            <div id="day1-content" style="display: none;">
+                <!-- Update this button in the Day 1 content section of your HTML -->
+                <button onclick="showDaysOverview()" class="back-button">← Back to Learning Path</button>
+                
+                <div class="exercise-container">
+                    <div class="exercise">
+                        <div class="exercise-header">
+                            <h3>Anki Flashcards</h3>
+                            <div id="anki-status" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>Review your daily flashcards to build vocabulary.</p>
+                       <button class="button" onclick="markComplete('anki', 1)">Mark as complete</button>
+                    </div>
+
+                    <div class="exercise">
+                        <div class="exercise-header">
+                     <br>      
+                            <h3>Listening Practice</h3>
+                            <div id="listening-status" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>Watch the following video and practice your listening skills.</p>
+                        <button class="exercise-button" onclick="openVideoModal(1)">
+                            Watch Video
+                        </button>
+                        <button class="button" onclick="markComplete('listening', 1)">Mark as complete</button>
+                    </div>
+
+                    <div class="exercise">
+                        <div class="exercise-header">
+                     <br>       
+                            <h3>Translation Exercise</h3>
+                            <div id="translation-status" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>You need 100% to complete this step.</p>
+                        <button class="exercise-button" onclick="openTranslationModal(1)">
+                            Go to exercises
+                        </button>
+                    </div>
+                    <div class="exercise">
+    <div class="exercise-header">
+        <br>       
+        <h3>Reading Practice</h3>
+        <div id="reading-status" class="completion-badge">
+            Not Started
+        </div>
+    </div>
+    <p>Practice your reading skills with an interactive text.</p>
+    <button class="exercise-button" onclick="openReadingModal(1)">
+        Start Reading
+    </button>
+    <button class="button" onclick="markComplete('reading', 1)">Mark as complete</button>
+</div>
+                </div>
+            </div>
+            <!-- Day 2 content - hidden by default -->
+            <div id="day2-content" style="display: none;">
+                <button onclick="showDaysOverview()" class="back-button">← Back to Learning Path</button>
+                
+                <div class="exercise-container">
+                    <div class="exercise">
+                        <div class="exercise-header">
+                            <h3>Anki Flashcards</h3>
+                            <div id="anki-status-day2" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>Review your daily flashcards focused on basic conversations.</p>
+                        <button class="button" onclick="markComplete('anki', 2)">Mark as complete</button>
+                    </div>
+
+                    <div class="exercise">
+                        <div class="exercise-header">
+                            <br>      
+                            <h3>Listening Practice</h3>
+                            <div id="listening-status-day2" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>Watch this video about common Spanish conversations.</p>
+                        <button class="exercise-button" onclick="openVideoModal(2)">
+                            Watch Video
+                        </button>
+                        <button class="button" onclick="markComplete('listening', 2)">Mark as complete</button>
+                    </div>
+
+                    <div class="exercise">
+                        <div class="exercise-header">
+                            <br>       
+                            <h3>Translation Exercise</h3>
+                            <div id="translation-status-day2" class="completion-badge">
+                                Not Started
+                            </div>
+                        </div>
+                        <p>Practice translating basic conversations. You need 100% to complete this step.</p>
+                        <button class="exercise-button" onclick="openTranslationModal(2)">
+                            Go to exercises
+                        </button>
+                    </div>
+                    <div class="exercise">
+    <div class="exercise-header">
+        <br>       
+        <h3>Reading Practice</h3>
+        <div id="reading-status-day2" class="completion-badge">
+            Not Started
+        </div>
+    </div>
+    <p>Continue improving your reading skills with new texts.</p>
+    <button class="exercise-button" onclick="openReadingModal(2)">
+        Start Reading
+    </button>
+    <button class="button" onclick="markComplete('reading', 2)">Mark as complete</button>
+</div>
+                </div>
+            </div>
+    
+
+<!-- Video Modal -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeVideoModal()">&times;</span>
+        <div class="video-container">
+            <iframe 
+                id="youtubeVideo"
+                src="" 
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+
+    <!-- Translation Exercise Modal -->
+    <div id="translationModal" class="modal">
+        <div class="modal-content translation-modal">
+            <span class="close-button" onclick="closeTranslationModal()">&times;</span>
+            <div id="translationExerciseContainer">
+                <!-- Exercise Content -->
+                <div class="stats-grid" role="status">
+                    <div class="stat-card">
+                        <div class="stat-value" id="exerciseCount">0/5</div>
+                        <div>Oefeningen</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="accuracy">0%</div>
+                        <div>Nauwkeurigheid</div>
+                    </div>
+                </div>
+                <div class="sentence-container">                    <h2>Vertaal deze zin:</h2>
+                
+                    <div class="sentence" aria-live="polite"></div>
+                </div>
+              
+                <div class="input-container">
+                    <input type="text" 
+                           id="answer" 
+                           class="answer-input" 
+                           placeholder="Typ je Spaanse vertaling hier..." 
+                           autocomplete="off"
+                           spellcheck="false">
+                </div>
+                <div id="feedback" class="feedback" role="alert"></div>
+                <button id="checkButton" class="button">
+                    Controleer antwoord
+                </button>
+            </div>
+            </div>
+            </div>
+  <div id="readingModal" class="modal">
+    <button class="close-button" onclick="closeReadingModal()">
+        ← Back to exercises
+    </button>
+    <iframe id="readerFrame" src="" frameborder="0"></iframe>
+</div>
+    </div>
+
+<script src="Index.js"></script>
+</body>
+</html>
