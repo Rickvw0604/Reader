@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Exercise</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sentence-practice {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px;
+            display: none;
+        }
+
+        .sentence-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .video-control-button {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .video-control-button:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+        }
+
+        .word-selection {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .sentence-words {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .word-item {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .word-item.selected {
+            background: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+
+        .practice-progress {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        #statusMessage {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 4px;
+            display: none;
+            z-index: 3000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <div id="youtubeVideo"></div>
+    </div>
+
+    <div id="sentencePractice" class="sentence-practice">
+        <div class="sentence-controls">
+            <button id="replayButton" class="video-control-button">
+                <span class="button-icon">↺</span> Replay Sentence
+            </button>
+            <button id="nextButton" class="video-control-button">
+                Next <span class="button-icon">→</span>
+            </button>
+        </div>
+        
+        <div id="wordSelection" class="word-selection">
+            <h3>Which words did you hear?</h3>
+            <div id="sentenceWords" class="sentence-words"></div>
+            <button id="submitWords" class="video-control-button">Submit</button>
+        </div>
+
+        <div class="practice-progress">
+            <div class="progress-text">
+                Sentence <span id="currentSentence">1</span> of <span id="totalSentences">0</span>
+            </div>
+            <div class="previous-attempt" id="previousAttempt"></div>
+        </div>
+    </div>
+
+    <div id="statusMessage"></div>
+
+    <script>
+        const videoUrls = {
+            1: '0Hcbd8WfXes',
+            2: 'oE1vwNNoJWo'
+        };
+
+        class VideoPractice {
+            constructor(dayNumber) {
+                this.dayNumber = dayNumber;
+                this.player = null;
+                this.srtData = null;
+                this.currentSentenceIndex = 0;
+                this.selectedWords = new Set();
+                this.videoProgress = this.loadVideoProgress();
+                this.practiceMode = false;
+            }
+
+            async initialize() {
+                try {
+                    await this.loadSRTData();
+                    this.initializePlayer();
+                    this.setupEventListeners();
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.showStatus('Failed to initialize video exercise. Please try again.');
+                }
+            }
+
+            async loadSRTData() {
+                try {
+                    const response = await fetch(`/timestamps/video${this.dayNumber}.srt`);
+                    if (!response.ok) throw new Error('Failed to load subtitles');
+                    
+                    const srtText = await response.text();
+                    this.srtData = this.parseSRT(srtText);
+                    
+                    if (this.srtData.length === 0) throw new Error('No valid subtitles found');
+                    
+                    document.getElementById('totalSentences').textContent = this.srtData.length;
+                } catch (error) {
+                    console.error('SRT loading error:', error);
+                    throw error;
+                }
+            }
+
+            parseSRT(srtText) {
+                try {
+                    return srtText.trim().split('\n\n')
+                        .map(entry => {
+                            const [index, timing, ...textLines] = entry.split('\n');
+                            const [startTime, endTime] = timing.split(' --> ')
+                                .map(this.timeToSeconds);
+                            const text = textLines.join(' ').trim();
+                            
+                            if (isNaN(startTime) || isNaN(endTime) || !text) {
+                                console.warn('Invalid SRT entry:', { index, timing, text });
+                                return null;
+                            }
+
+                            return { startTime, endTime, text };
+                        })
+                        .filter(entry => entry !== null);
+                } catch (error) {
+                    console.error('SRT parsing error:', error);
+                    return [];
+                }
+            }
+
+            timeToSeconds(timeString) {
+                try {
+                    const [time, milliseconds] = timeString.split(',');
+                    const [hours, minutes, seconds] = time.split(':').map(Number);
+                    return hours * 3600 + minutes * 60 + seconds + parseInt(milliseconds) / 1000;
+                } catch (error) {
+                    console.error('Time parsing error:', error);
+                    return NaN;
+                }
+            }
+
+            initializePlayer() {
+                const videoId = videoUrls[this.dayNumber];
+                if (!videoId) {
+                    throw new Error('Invalid video ID for day ' + this.dayNumber);
+                }
+
+                this.player = new YT.Player('youtubeVideo', {
+                    height: '390',
+                    width: '640',
+                    videoId: videoId,
+                    playerVars: {
+                        'start': this.dayNumber === 1 ? 30 : 281,
+                        'end': this.dayNumber === 1 ? 216 : 434,
+                        'enablejsapi': 1,
+                        'modestbranding': 1,
+                        'rel': 0,
+                        'origin': window.location.origin
+                    },
+                    events: {
+                        'onReady': this.onPlayerReady.bind(this),
+                        'onStateChange': this.onPlayerStateChange.bind(this),
+                        'onError': this.handlePlayerError.bind(this)
+                    }
+                });
+            }
+
+            onPlayerReady(event) {
+                event.target.playVideo();
+            }
+
+            onPlayerStateChange(event) {
+                if (event.data === YT.PlayerState.ENDED && !this.practiceMode) {
+                    this.startSentencePractice();
+                }
+            }
+
+            handlePlayerError(event) {
+                const errorMessages = {
+                    2: 'Invalid video ID',
+                    5: 'HTML5 player error',
+                    100: 'Video not found',
+                    101: 'Video not embeddable',
+                    150: 'Video not embeddable'
+                };
+
+                const message = errorMessages[event.data] || 'An error occurred';
+                this.showStatus(`Video error: ${message}`);
+            }
+
+            setupEventListeners() {
+                document.getElementById('replayButton').addEventListener('click', 
+                    () => this.playCurrentSentence());
+                
+                document.getElementById('nextButton').addEventListener('click', 
+                    () => this.showWordSelection());
+                
+                document.getElementById('submitWords').addEventListener('click', 
+                    () => this.submitWordSelection());
+            }
+
+            startSentencePractice() {
+                this.practiceMode = true;
+                document.getElementById('sentencePractice').style.display = 'block';
+                this.playCurrentSentence();
+            }
+
+            playCurrentSentence() {
+                if (!this.srtData[this.currentSentenceIndex]) return;
+
+                const sentence = this.srtData[this.currentSentenceIndex];
+                this.player.seekTo(sentence.startTime);
+                this.player.playVideo();
+
+                setTimeout(() => {
+                    this.player.pauseVideo();
+                }, (sentence.endTime - sentence.startTime) * 1000);
+            }
+
+            showWordSelection() {
+                const sentence = this.srtData[this.currentSentenceIndex];
+                if (!sentence) return;
+
+                const words = sentence.text.split(' ');
+                const container = document.getElementById('sentenceWords');
+                
+                container.innerHTML = words.map(word => `
+                    <span class="word-item" data-word="${word}">${word}</span>
+                `).join('');
+
+                container.querySelectorAll('.word-item').forEach(wordElement => {
+                    wordElement.addEventListener('click', () => {
+                        const word = wordElement.dataset.word;
+                        if (this.selectedWords.has(word)) {
+                            this.selectedWords.delete(word);
+                            wordElement.classList.remove('selected');
+                        } else {
+                            this.selectedWords.add(word);
+                            wordElement.classList.add('selected');
+                        }
+                    });
+                });
+
+                document.getElementById('wordSelection').style.display = 'block';
+            }
+
+            submitWordSelection() {
+                const videoId = `video${this.dayNumber}`;
+                const progress = this.videoProgress;
+                
+                if (!progress[videoId]) {
+                    progress[videoId] = { attempts: [] };
+                }
+                
+                progress[videoId].attempts.push({
+                    date: new Date().toISOString(),
+                    recognizedWords: {
+                        [this.currentSentenceIndex]: Array.from(this.selectedWords)
+                    }
+                });
+                
+                this.saveVideoProgress(progress);
+
+                this.selectedWords.clear();
+                this.currentSentenceIndex++;
+                
+                if (this.currentSentenceIndex < this.srtData.length) {
+                    document.getElementById('wordSelection').style.display = 'none';
+                    document.getElementById('currentSentence').textContent = 
+                        this.currentSentenceIndex + 1;
+                    this.playCurrentSentence();
+                } else {
+                    this.endPractice();
+                }
+            }
+
+            loadVideoProgress() {
+                try {
+                    const saved = localStorage.getItem('video_progress');
+                    return saved ? JSON.parse(saved) : {};
+                } catch (error) {
+                    console.error('Error loading progress:', error);
+                    return {};
+                }
+            }
+
+            saveVideoProgress(progress) {
+                try {
+                    localStorage.setItem('video_progress', JSON.stringify(progress));
+                } catch (error) {
+                    console.error('Error saving progress:', error);
+                    this.showStatus('Could not save progress');
+                }
+            }
+
+            endPractice() {
+                this.showStatus('Practice completed! Great job!');
+                // Send message to parent window to mark exercise as complete
+                window.parent.postMessage({
+                    type: 'exerciseComplete',
+                    exercise: 'listening',
+                    day: this.dayNumber
+                }, '*');
+            }
+
+            showStatus(message, duration = 3000) {
+                const status = document.getElementById('statusMessage');
+                status.textContent = message;
+                status.style.display = 'block';
+                
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, duration);
+            }
+
+            cleanup() {
+                if (this.player) {
+                    this.player.destroy();
+                    this.player = null;
+                }
+                this.srtData = null;
+                this.selectedWords.clear();
+                this.practiceMode = false;
+            }
+        }
+
+        // Get day parameter from URL and initialize
+        const urlParams = new URLSearchParams(window.location.search);
+        const day = parseInt(urlParams.get('day')) || 1;
+
+        // Initialize when YouTube API is ready
+        window.onYouTubeIframeAPIReady = function() {
+            window.videoPractice = new VideoPractice(day);
+            window.videoPractice.initialize();
+        };
+    </script>
+</body>
+</html>
