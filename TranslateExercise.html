@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Exercise</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-stepper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding: 0 20px;
+        }
+
+        .progress-stepper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .progress-stepper::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: var(--progress-width, 0%);
+            height: 2px;
+            background: #2c3e50;
+            transition: width 0.3s ease;
+            z-index: 2;
+        }
+
+        .step {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            position: relative;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+
+        .step.completed {
+            background: #2c3e50;
+            border-color: #2c3e50;
+        }
+
+        .step.current {
+            border-color: #2c3e50;
+            transform: scale(1.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .sentence-container {
+            margin-bottom: 30px;
+        }
+
+        .sentence-container h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .sentence {
+            font-size: 1.3em;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #2c3e50;
+        }
+
+        .word {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .word:hover {
+            background-color: #e9ecef;
+        }
+
+        .speech-bubble {
+            position: fixed;
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #2c3e50;
+        }
+
+        .button {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: #34495e;
+        }
+
+        .feedback-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .feedback-bar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .feedback-bar.correct {
+            background: #2c3e50;
+        }
+
+        .feedback-bar.warning {
+            background: #f59e0b;
+        }
+
+        .feedback-bar.incorrect {
+            background: #ef4444;
+        }
+
+        .results-overview {
+            padding: 20px;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .sentence-reviews {
+            margin-top: 30px;
+        }
+
+        .sentence-review {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .sentence-review .review-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .floating-action-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="progress-stepper" role="progressbar">
+            <div class="step"></div>
+            <div class="step"></div>
+            <div class="step"></div>
+            <div class="step"></div>
+            <div class="step"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="exerciseCount">0/5</div>
+                <div>Exercise</div>
+            </div>
+        </div>
+
+        <div class="sentence-container">
+            <h2>Translate this sentence:</h2>
+            <div class="sentence"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" 
+                   id="answer" 
+                   class="answer-input" 
+                   placeholder="Type your Spanish translation here..." 
+                   autocomplete="off"
+                   spellcheck="false">
+        </div>
+
+        <button id="checkButton" class="button">
+            Check Answer
+        </button>
+    </div>
+
+    <script>
+        // Exercise data for Day 1 and Day 2
+        const day1Exercises = [
+            {
+                dutch: ["Karin", "is", "in", "de", "supermarkt"],
+                spanish: ["Karin", "está", "en", "el", "supermercado"],
+                fullAnswer: "Karin está en el supermercado.",
+                acceptableAlternatives: [],
+                unnecessaryPronoun: false,
+            },
+            {
+                dutch: ["Zij", "zoekt", "vers", "fruit", "voor", "het", "ontbijt"],
+                spanish: ["Ella", "busca", "fresca", "fruta", "para", "el", "desayuno"],
+                fullAnswer: "Busca fruta fresca para el desayuno.",
+                acceptableAlternatives: ["Ella busca fruta fresca para el desayuno."],
+                unnecessaryPronoun: true,
+            },
+            {
+                dutch: ["Zij", "kiest", "een paar", "appels", "bananen", "en", "druiven"],
+                spanish: ["Ella", "elige", "unas", "manzanas", "plátanos", "y", "uvas"],
+                fullAnswer: "Elige unas manzanas, plátanos y uvas.",
+                acceptableAlternatives: ["Ella elige unas manzanas, plátanos y uvas."],
+                unnecessaryPronoun: true,
+            },
+            {
+                dutch: ["Daarna", "loopt", "zij", "langs", "de", "groenteafdeling"],
+                spanish: ["Luego", "pasa", "ella", "por", "el", "pasillo de verduras"],
+                fullAnswer: "Luego pasa por el pasillo de verduras.",
+                acceptableAlternatives: ["Luego ella pasa por el pasillo de verduras."],
+                unnecessaryPronoun: true,
+            },
+            {
+                dutch: ["Uiteindelijk", "betaalt", "zij", "bij", "de", "kassa"],
+                spanish: ["Finalmente", "paga", "ella", "en", "la", "caja"],
+                fullAnswer: "Finalmente paga en la caja.",
+                acceptableAlternatives: ["Finalmente ella paga en la caja."],
+                unnecessaryPronoun: true,
+            }
+        ];
+
+        const day2Exercises = [
+            {
+                dutch: ["Karin", "loopt", "met", "Tokyo", "op", "het", "strand"],
+                spanish: ["Karin", "camina", "con", "Tokyo", "en", "la", "playa"],
+                fullAnswer: "Karin camina con Tokyo en la playa.",
+                acceptableAlternatives: [],
+                unnecessaryPronoun: false,
+            },
+            {
+                dutch: ["Tokyo", "speelt", "in", "het", "zand"],
+                spanish: ["Tokyo", "juega", "en", "la", "arena"],
+                fullAnswer: "Tokyo juega en la arena.",
+                acceptableAlternatives: [],
+                unnecessaryPronoun: false,
+            },
+            {
+                dutch: ["Karin", "gooit", "een", "bal"],
+                spanish: ["Karin", "lanza", "una", "pelota"],
+                fullAnswer: "Karin lanza una pelota.",
+                acceptableAlternatives: [],
+                unnecessaryPronoun: false,
+            },
+            {
+                dutch: ["Tokyo", "brengt", "de", "bal", "terug"],
+                spanish: ["Tokyo", "trae", "la", "pelota", "de vuelta"],
+                fullAnswer: "Tokyo trae la pelota de vuelta.",
+                acceptableAlternatives: [],
+                unnecessaryPronoun: false,
+            },
+            {
+                dutch: ["Ze", "zijn", "blij", "samen"],
+                spanish: ["Ellos", "están", "felices", "juntos"],
+                fullAnswer: "Están felices juntos.",
+                acceptableAlternatives: ["Ellos están felices juntos."],
+                unnecessaryPronoun: true,
+            }
+        ];
+
+        class ExerciseManager {
+            constructor(exercises) {
+                this.exercises = exercises;
+                this.currentIndex = 0;
+                this.correctAnswers = 0;
+                this.userAnswers = new Array(exercises.length).fill(null);
+                this.initializeElements();
+                this.setupEventListeners();
+                this.initializeExercise();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    sentence: document.querySelector('.sentence'),
+                    answer: document.getElementById('answer'),
+                    checkButton: document.getElementById('checkButton'),
+                    exerciseCount: document.getElementById('exerciseCount'),
+                    progressStepper: document.querySelector('.progress-stepper')
+                };
+                this.updateExerciseCount();
+                this.updateProgress();
+            }
+
+            updateExerciseCount() {
+                if (this.elements.exerciseCount) {
+                    this.elements.exerciseCount.textContent = `${this.currentIndex + 1}/${this.exercises.length}`;
+                }
+            }
+
+            updateProgress() {
+                const steps = this.elements.progressStepper.querySelectorAll('.step');
+                steps.forEach((step, index) => {
+                    step.className = 'step';
+                    if (index < this.currentIndex) {
+                        step.classList.add('completed');
+                    } else if (index === this.currentIndex) {
+                        step.classList.add('current');
+                    }
+                });
+
+                const progress = (this.currentIndex / (this.exercises.length - 1)) * 100;
+                this.elements.progressStepper.style.setProperty('--progress-width', `${progress}%`);
+            }
+
+            initializeExercise() {
+                this.createSentence();
+                this.resetUI();
+                this.updateExerciseCount();
+                this.updateProgress();
+            }
+
+            createSentence() {
+                const exercise = this.getCurrentExercise();
+                if (!exercise) return;
+
+                if (this.elements.sentence) {
+                    this.elements.sentence.innerHTML = `${exercise.dutch.join(' ')}.`;
+                    
+                    const words = this.elements.sentence.textContent.split(' ');
+                    this.elements.sentence.innerHTML = words.map((word, index) => `
+                        <span class="word animate__animated animate__fadeIn"
+                              data-translation="${exercise.spanish[index] || ''}"
+                              role="button"
+                              tabindex="0"
+                              aria-label="Click to see translation">
+                            ${word}
+                        </span>
+                    `).join(' ');
+
+                    const wordElements = this.elements.sentence.querySelectorAll('.word');
+                    wordElements.forEach(word => {
+                        word.addEventListener('click', (event) => this.showTranslation(word, event));
+                    });
+                }
+            }
+
+            getCurrentExercise() {
+                return this.exercises[this.currentIndex];
+            }
+
+            resetUI() {
+                if (this.elements.answer) this.elements.answer.value = '';
+                this.elements.checkButton.textContent = 'Check Answer';
+                this.removeSpeechBubble();
+            }
+
+            showTranslation(wordElement, event) {
+                this.removeSpeechBubble();
+                
+                const dutch = wordElement.textContent.trim();
+                const spanish = wordElement.dataset.translation;
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'speech-bubble animate__animated animate__fadeIn';
+                bubble.textContent = `${dutch} → ${spanish}`;
+                
+                document.body.appendChild(bubble);
+                
+                const rect = wordElement.getBoundingClientRect();
+                const bubbleRect = bubble.getBoundingClientRect();
+                
+                const left = rect.left + (rect.width / 2) - (bubbleRect.width / 2);
+                const top = rect.top - bubbleRect.height - 10;
+                
+                bubble.style.left = `${Math.max(10, Math.min(left, window.innerWidth - bubbleRect.width - 10))}px`;
+                bubble.style.top = `${Math.max(10, top)}px`;
+                
+                this.currentSpeechBubble = bubble;
+                
+                document.addEventListener('click', this.handleClickOutside);
+            }
+
+            handleClickOutside = (event) => {
+                if (this.currentSpeechBubble && 
+                    !this.currentSpeechBubble.contains(event.target) && 
+                    !event.target.classList.contains('word')) {
+                    this.removeSpeechBubble();
+                }
+            }
+
+            removeSpeechBubble() {
+                if (this.currentSpeechBubble) {
+                    this.currentSpeechBubble.remove();
+                    this.currentSpeechBubble = null;
+                    document.removeEventListener('click', this.handleClickOutside);
+                }
+            }
+
+            compareAnswers(userAnswer, correctAnswer) {
+                const normalize = (text) => {
+                    return text.toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[.,!?¡¿]/g, '')
+                        .trim();
+                };
+
+                return normalize(userAnswer) === normalize(correctAnswer);
+            }
+
+            showFeedback(message, type) {
+                const existingBar = document.querySelector('.feedback-bar');
+                if (existingBar) {
+                    existingBar.remove();
+                }
+
+                const feedbackBar = document.createElement('div');
+                feedbackBar.className = `feedback-bar ${type}`;
+                feedbackBar.textContent = message;
+                document.body.appendChild(feedbackBar);
+                
+                requestAnimationFrame(() => {
+                    feedbackBar.classList.add('show');
+                });
+            }
+
+            checkAnswer() {
+                const userAnswer = this.elements.answer.value.trim();
+                const exercise = this.getCurrentExercise();
+
+                if (!userAnswer) {
+                    this.showFeedback('Please enter your answer first.', 'warning');
+                    return;
+                }
+
+                const isAcceptableAlternative = exercise.acceptableAlternatives.some(alt => 
+                    this.compareAnswers(userAnswer, alt)
+                );
+                
+                const isPerfect = this.compareAnswers(userAnswer, exercise.fullAnswer);
+                const isCorrect = isPerfect || isAcceptableAlternative;
+
+                this.userAnswers[this.currentIndex] = { 
+                    answer: userAnswer, 
+                    isCorrect,
+                    usedPronoun: isAcceptableAlternative
+                };
+
+                if (isCorrect) {
+                    this.correctAnswers++;
+                    if (isAcceptableAlternative) {
+                        this.showFeedback(`Almost perfect! Better without the pronoun: ${exercise.fullAnswer}`, 'warning');
+                    } else {
+                        this.showFeedback('Perfect answer! 🎉', 'correct');
+                    }
+                } else {
+                    this.showFeedback(`Not quite. The correct answer is: "${exercise.fullAnswer}"`, 'incorrect');
+                }
+
+                this.elements.checkButton.textContent = 'Next';
+            }
+
+            next() {
+                const feedbackBar = document.querySelector('.feedback-bar');
+                if (feedbackBar) {
+                    feedbackBar.classList.remove('show');
+                    setTimeout(() => feedbackBar.remove(), 300);
+                }
+
+                if (this.currentIndex >= this.exercises.length - 1) {
+                    this.showFinalResults();
+                    return;
+                }
+
+                this.currentIndex++;
+                this.initializeExercise();
+            }
+
+            showFinalResults() {
+                const percentage = Math.round((this.correctAnswers / this.exercises.length) * 100);
+                
+                const resultsHTML = `
+                    <div class="results-overview">
+                        <div class="results-header">
+                            <h2>Exercise Results</h2>
+                            <p>You completed all exercises!</p>
+                        </div>
+
+                        <div class="sentence-reviews">
+                            <h3>Review</h3>
+                            ${this.exercises.map((exercise, index) => {
+                                const userAnswer = this.userAnswers[index];
+                                const answerStyle = userAnswer?.isCorrect ? 
+                                    'color: #22c55e;' : 'color: #ef4444;';
+                                
+                                return `
+                                    <div class="sentence-review">
+                                        <div class="review-header">Exercise ${index + 1}</div>
+                                        <div>${exercise.dutch.join(' ')}.</div>
+                                        <div><strong>Correct:</strong> ${exercise.fullAnswer}</div>
+                                        <div style="${answerStyle}">
+                                            <strong>Your answer:</strong> ${userAnswer?.answer || 'No answer'}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        <div class="floating-action-bar">
+                            <button onclick="window.exerciseManager.restartExercises()" class="button">
+                                Try Again
+                            </button>
+                            ${percentage === 100 ? `
+                                <button onclick="notifyCompletion()" class="button">
+                                    Complete & Continue
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                document.querySelector('.container').innerHTML = resultsHTML;
+            }
+
+            setupEventListeners() {
+                this.elements.checkButton.addEventListener('click', () => {
+                    if (this.elements.checkButton.textContent === 'Check Answer') {
+                        this.checkAnswer();
+                    } else {
+                        this.next();
+                    }
+                });
+
+                this.elements.answer.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (this.elements.checkButton.textContent === 'Check Answer') {
+                            this.checkAnswer();
+                        } else {
+                            this.next();
+                        }
+                    }
+                });
+            }
+
+            restartExercises() {
+                location.reload();
+            }
+        }
+
+        // Initialize based on URL parameter
+        function initializeExercises() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentDay = parseInt(urlParams.get('day')) || 1;
+            const exercises = currentDay === 1 ? day1Exercises : day2Exercises;
+            window.exerciseManager = new ExerciseManager(exercises);
+        }
+
+        function notifyCompletion() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentDay = parseInt(urlParams.get('day')) || 1;
+            window.parent.postMessage({
+                type: 'exerciseComplete',
+                exercise: 'translation',
+                day: currentDay
+            }, '*');
+        }
+
+        // Start exercises when page loads
+        document.addEventListener('DOMContentLoaded', initializeExercises);
+    </script>
+</body>
+</html>
