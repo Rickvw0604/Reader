@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Learning Text Reader</title>
+   <style>
+       /* Existing styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+    min-height: 100%;  /* This will reference the iframe's height instead */
+    height: 100%;
+}
+
+/* Top Bar Styles - Modified for all pages */
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: #2c3e50;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 3000;
+}
+
+/* Remove top bar hiding */
+body .page#readPage.active ~ .top-bar {
+    display: flex !important;
+}
+
+/* Overlay Styles */
+.overlay-page {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 50px);
+    background: white;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.overlay-page.active {
+    display: block;
+}
+
+.close-button {
+    position: fixed;
+    top: 45px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    z-index: 2999;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close-button:hover {
+    background: #f5f5f5;
+}
+
+/* Audio Upload Modal Styles */
+.audio-upload-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.audio-upload-modal .modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.audio-upload-modal h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    font-size: 1.5rem;
+}
+
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.file-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-upload label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.file-upload input[type="file"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.file-upload span {
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+}
+
+.srt-preview {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    margin: 15px 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+}
+
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-container button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+#syncButton {
+    background: #2c3e50;
+    color: white;
+}
+
+#syncButton:hover {
+    background: #34495e;
+}
+
+#syncButton:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Audio Controls Styles */
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 10px 0;
+    border: 1px solid #e9ecef;
+}
+
+.audio-controls button {
+    padding: 8px 16px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.audio-controls button:hover {
+    background: #34495e;
+}
+
+.audio-progress {
+    flex: 1;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.audio-progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #2c3e50;
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+/* Text Selection List Styles */
+.text-selection-list {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.text-selection-item {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.text-selection-item:last-child {
+    border-bottom: none;
+}
+
+.text-selection-item:hover {
+    background: #f8f9fa;
+}
+
+.text-selection-item.has-audio {
+    background: #e8f5e9;
+}
+
+.text-selection-item .text-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.text-selection-item .text-title {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.text-selection-item .text-date {
+    font-size: 12px;
+    color: #666;
+}
+
+.text-selection-item .audio-status {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Time Display Styles */
+#currentTime, #duration {
+    font-family: monospace;
+    font-size: 14px;
+    color: #666;
+    min-width: 45px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .audio-upload-modal .modal-content {
+        width: 95%;
+        margin: 20px;
+        padding: 20px;
+    }
+
+    .audio-controls {
+        flex-wrap: wrap;
+    }
+
+    .audio-progress {
+        order: -1;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+.rating-button {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: transform 0.2s;
+    color: #333;
+}
+
+/* Add this new style */
+.rating-button.selected {
+    border: 3px solid black;
+}
+
+.floating-done-button {
+    position: fixed;
+    background: #2c3e50;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 3000;
+    font-size: 14px;
+    transition: transform 0.1s;
+    user-select: none;
+}
+
+.floating-done-button:hover {
+    transform: scale(1.05);
+}
+
+.word-selected {
+    outline: 2px solid #2c3e50;
+    border-radius: 4px;
+}
+
+/* Specific styles for read modal */
+#readPage .container {
+    max-width: 98%;
+    margin: 80px auto;
+    padding: 0;
+    overflow: hidden;
+}
+
+#readPage.overlay-page {
+    overflow: hidden;
+}
+
+#readPage .text-display-container {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: 10px;
+    min-height: calc(100vh - 100px);
+    overflow: hidden;
+}
+
+#readPage .page-content {
+    min-height: calc(100vh - 120px);
+    line-height: 1.6;
+    margin: 0;
+    overflow: hidden;
+}
+
+#textDisplay {
+    user-select: none;
+    -webkit-user-select: none;  /* Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE10+/Edge */
+}
+
+#readPage #textDisplay {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #333;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Hide title in reading modal */
+#readPage .text-title {
+    display: none;
+}
+
+.first-page .text-title {
+    display: none;
+}
+
+.known-words-counter {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.top-buttons {
+    display: none;
+}
+
+.top-buttons.visible {
+    display: flex;
+}
+
+.nav-button {
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.nav-button:hover {
+    background: #435d78;
+}
+
+/* Container Styles */
+.container {
+    max-width: 1000px;
+    margin: 60px auto 0;
+    padding: 20px;
+    padding-bottom: 80px;
+    height: calc(100vh - 110px);
+    overflow-y: auto;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.bottom-nav .nav-button {
+    flex: 1;
+    margin: 0 10px;
+    height: 40px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.bottom-nav .nav-button:first-child {
+    margin-left: 0;
+}
+
+.bottom-nav .nav-button:last-child {
+    margin-right: 0;
+}
+
+/* Home Page Styles */
+.home-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+}
+
+.home-title {
+    color: #2c3e50;
+    margin-bottom: 40px;
+    font-size: 2.5em;
+}
+
+.button-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 auto;
+    max-width: 600px;
+    width: 90%;
+}
+
+.home-button {
+    padding: 30px 20px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2c3e50;
+    color: white;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.home-button:hover {
+    transform: translateY(-2px);
+    background: #34495e;
+}
+
+.home-button:active {
+    transform: translateY(0);
+}
+
+/* Create Text Page Styles */
+.create-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.title-input-container {
+    margin-bottom: 20px;
+}
+
+.text-title-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 18px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.text-title-input:focus {
+    outline: none;
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
+}
+
+.text-title-input.error {
+    border-color: #e74c3c;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 5px;
+    display: none;
+}
+
+.error-message.visible {
+    display: block;
+}
+
+#textInput {
+    width: 100%;
+    height: 400px;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.button-container {
+    display: flex;
+    gap: 10px;
+}
+
+.action-button {
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.save-button {
+    background: #4CAF50;
+    color: white;
+}
+
+.save-button:hover {
+    background: #45a049;
+}
+
+.cancel-button {
+    background: #e74c3c;
+    color: white;
+}
+
+.cancel-button:hover {
+    background: #c0392b;
+}
+
+/* Pagination Styles */
+.pagination-controls {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 0;
+    background: white;
+    z-index: 99;
+    border-bottom: 1px solid #eee;
+}
+
+.pagination-controls span {
+    color: #666;
+    font-size: 14px;
+    display: inline-block;
+}
+
+/* Word knowledge levels */
+.word-new { background-color: #a8d5ff; }
+.word-untracked { background-color: transparent;}
+.word-level-1 { background-color: #fff176; }
+.word-level-2 { background-color: #ffd54f; }
+.word-level-3 { background-color: #ffb300; }
+.word-level-4 { background-color: #c5e1a5; }
+.word-level-5 { background-color: #81c784; }
+
+/* Rating Overlay Styles */
+.rating-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 2001;
+}
+
+.rating-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.selected-word {
+    font-size: 24px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.definition-section {
+    margin: 15px 0;
+}
+
+.suggested-translation {
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.custom-definition {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.rating-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.rating-button {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: transform 0.2s;
+    color: #333;
+}
+
+.rating-button:hover {
+    transform: scale(1.1);
+}
+
+.rating-button.level-1 { background-color: #fff176; }
+.rating-button.level-2 { background-color: #ffd54f; }
+.rating-button.level-3 { background-color: #ffb300; }
+.rating-button.level-4 { background-color: #c5e1a5; }
+.rating-button.level-5 { background-color: #81c784; }
+
+/* Text Library Styles */
+.text-library {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-library .action-button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+}
+
+.text-library .action-button:hover {
+    background: #2980b9;
+}
+
+.text-library .action-button:last-child {
+    background: #e74c3c;
+}
+
+.text-library .action-button:last-child:hover {
+    background: #c0392b;
+}
+
+/* Sentence Mode Styles */
+.sentence-mode-overlay {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    background: white;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.sentence-box {
+    height: 100%;
+    padding: 60px 20px 20px 20px;
+    overflow-y: auto;
+}
+
+.sentence-section {
+    margin-bottom: 30px;
+}
+
+.sentence-section h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.translation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sentence-content {
+    font-size: 20px;
+    line-height: 1.6;
+    min-height: 50px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.sentence-translation {
+    font-size: 18px;
+    color: #666;
+    margin: 10px 0;
+    font-style: italic;
+    padding: 10px;
+}
+
+.translation-section.hidden .sentence-translation {
+    display: none;
+}
+
+.sentence-close {
+    position: fixed;
+    top: 45px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    padding: 10px;
+    border-radius: 4px;
+    z-index: 2999;
+}
+
+.sentence-close:hover {
+    background: #f5f5f5;
+}
+
+.nav-arrow {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, transform 0.1s;
+    min-width: 120px;
+}
+
+.nav-arrow:hover {
+    background: #34495e;
+    transform: translateY(-1px);
+}
+
+.nav-arrow:active {
+    transform: translateY(0);
+}
+
+#sentenceCounter {
+    color: #666;
+    font-size: 14px;
+    padding: 0 20px;
+    flex: 0 0 auto;
+}
+
+.sentence-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2002;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+/* Adjust sentence box to account for fixed navigation */
+.sentence-box {
+    padding-bottom: 100px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.dont-track-button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+    margin-top: 10px;
+}
+
+.dont-track-button:hover {
+    background: #c0392b;
+}
+
+.mark-new-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.mark-new-button:hover {
+    background: #45a049;
+}
+
+/* File input styles */
+.file-input {
+    display: none;
+}
+
+/* Page visibility styles */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+/* Status message styles */
+.status-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #2c3e50;
+    color: white;
+    border-radius: 4px;
+    display: none;
+    z-index: 3000;
+}
+
+/* Sentence highlighting in text */
+.sentence-highlight {
+    background-color: rgba(231, 76, 60, 0.2);
+    border-radius: 4px;
+}
+
+/* Modified container style for overlays */
+.overlay-page .container {
+    margin-top: 20px;
+    padding: 20px;
+}
+
+/* Bottom nav modification */
+.bottom-nav {
+    display: none;
+}
+
+#readPage .bottom-nav {
+    display: flex;
+}
+
+/* Vocabulary table styles */
+.vocabulary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.vocabulary-table th,
+.vocabulary-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.vocabulary-table th {
+    background: #f5f5f5;
+}
+
+/* Search and filter styles */
+.search-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.level-filter {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+/* Audio-related styles - Add at the end of your existing styles */
+.text-selection-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 3000;
+}
+
+.text-selection-list {
+    margin: 20px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.text-selection-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.text-selection-item:last-child {
+    border-bottom: none;
+}
+
+.text-selection-item:hover {
+    background: #f5f5f5;
+}
+
+.text-selection-item.has-audio {
+    background: #e8f5e9;
+}
+
+.text-info {
+    flex: 1;
+}
+
+.text-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.text-date {
+    font-size: 12px;
+    color: #666;
+}
+
+.audio-status {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+.timestamp-editor {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 3000;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.timestamp-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.timestamp-text {
+    flex: 1;
+}
+
+.timestamp-input {
+    width: 100px;
+    padding: 5px;
+}
+
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.audio-progress {
+    flex: 1;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.audio-progress-fill {
+    height: 100%;
+    background: #2c3e50;
+    border-radius: 2px;
+    width: 0%;
+}
+
+    </style>
+</head>
+<body>
+    <!-- Top Bar - Simplified -->
+    <div class="top-bar">
+        <div class="known-words-counter">Known Words: <span id="knownWordsCount">0</span></div>
+    </div>
+
+  <!-- Home Page -->
+<div id="homePage" class="page active">
+    <div class="home-container">
+        <div class="button-grid">
+            <input type="file" id="loadTextInput" class="file-input" accept=".txt">
+            <input type="file" id="loadVocabInput" class="file-input" accept=".json">
+            <input type="file" id="loadAudioInput" class="file-input" accept="audio/*">
+            
+            <button class="home-button" onclick="document.getElementById('loadTextInput').click()">
+                Load Text
+            </button>
+            <button class="home-button" onclick="showPage('create')">
+                Create Text
+            </button>
+            <button class="home-button" onclick="saveVocabulary()">
+                Save Vocabulary
+            </button>
+            <button class="home-button" onclick="document.getElementById('loadVocabInput').click()">
+                Load Vocabulary
+            </button>
+            <button class="home-button" onclick="showVocabularyOverview()">
+                View Vocabulary List
+            </button>
+            <button class="home-button" onclick="showTextLibrary()">
+                My Texts
+            </button>
+            <button class="home-button" onclick="showTextSelection()">
+                Add Audio to Text
+            </button>
+        </div>
+    </div>
+</div>
+    
+    <!-- Create Text Overlay -->
+    <div id="createPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="create-container">
+                <div class="title-input-container">
+                    <input type="text" 
+                           id="textTitle" 
+                           placeholder="Enter title for your text..." 
+                           class="text-title-input"
+                           required>
+                </div>
+                <textarea id="textInput" placeholder="Write or paste your text here..."></textarea>
+                <div class="button-container">
+                    <button class="action-button save-button" onclick="saveAndRead()">Save & Continue to Reading</button>
+                    <button class="action-button cancel-button" onclick="showPage('home')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <div id="readPage" class="overlay-page">
+    <button class="close-button" onclick="showPage('home')">×</button>
+    <div class="container">
+        <div class="text-display-container">
+            <h2 id="textDisplayTitle" class="text-title"></h2>
+            <!-- Add this new div -->
+            <div class="audio-controls">
+                <button onclick="playPauseAudio()">Play/Pause</button>
+                <div class="audio-progress">
+                    <div class="audio-progress-fill"></div>
+                </div>
+                <span id="currentTime">0:00</span>
+            </div>
+            <!-- End of new div -->
+            <div id="textDisplay"></div>
+        </div>
+    </div>
+    <div class="bottom-nav">
+        <button class="nav-button" onclick="changePage(-1)">Previous</button>
+        <button class="nav-button sentence-mode-toggle" onclick="toggleSentenceMode()">Sentence Mode</button>
+        <button class="nav-button" onclick="changePage(1)">Next</button>
+    </div>
+</div>
+
+    <!-- Text Library Overlay -->
+    <div id="textLibraryPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="text-library">
+                <h2 class="overview-title">My Texts</h2>
+                <div class="filter-section">
+                    <input type="text" id="textSearch" placeholder="Search texts..." class="search-input">
+                </div>
+                <table id="textLibraryTable" class="vocabulary-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Date Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vocabulary Overview Overlay -->
+    <div id="vocabularyOverviewPage" class="overlay-page">
+        <button class="close-button" onclick="showPage('home')">×</button>
+        <div class="container">
+            <div class="vocabulary-overview">
+                <h2 class="overview-title">Vocabulary Overview</h2>
+                <div class="filter-section">
+                    <input type="text" id="vocabularySearch" placeholder="Search words..." class="search-input">
+                    <select id="levelFilter" class="level-filter">
+                        <option value="all">All Levels</option>
+                        <option value="0">New Words</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+                <table id="vocabularyTable" class="vocabulary-table">
+                    <thead>
+                        <tr>
+                            <th>Spanish Word</th>
+                            <th>Translation</th>
+                            <th>Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+     <!-- Word Rating Modal -->
+    <div id="ratingOverlay" class="rating-overlay">
+        <div class="rating-box">
+            <div class="selected-word"></div>
+            <div class="definition-section">
+                <div class="suggested-translation">Suggested: <span class="word-translation">Translating...</span></div>
+                <input type="text" class="custom-definition" placeholder="Enter custom definition (optional)">
+            </div>
+            <div>Rate how well you know this word:</div>
+            <div class="rating-buttons">
+                <button class="rating-button level-1" onclick="rateWord(1)">1</button>
+                <button class="rating-button level-2" onclick="rateWord(2)">2</button>
+                <button class="rating-button level-3" onclick="rateWord(3)">3</button>
+                <button class="rating-button level-4" onclick="rateWord(4)">4</button>
+                <button class="rating-button level-5" onclick="rateWord(5)">5</button>
+            </div>
+           <button class="dont-track-button" onclick="markAsUntracked()">Don't add to vocabulary</button>
+        </div>
+    </div>
+
+    <!-- Sentence Mode Overlay -->
+    <div id="sentenceModeOverlay" class="sentence-mode-overlay">
+        <button class="close-button" onclick="closeSentenceMode()">×</button>
+        <div class="sentence-box">
+            <div class="sentence-section">
+                <h3>Spanish</h3>
+                <div class="sentence-audio-controls">
+                <button onclick="playSentenceAudio()">Play Audio</button>
+            </div>
+                <div class="sentence-content"></div>
+            </div>
+            
+            <div class="sentence-section translation-section">
+                <div class="translation-header">
+                    <h3>English</h3>
+                    <button class="toggle-translation-btn" onclick="toggleTranslation()">
+                        <span class="toggle-icon">👁️</span>
+                    </button>
+                </div>
+                <div class="sentence-translation"></div>
+            </div>
+
+            <div class="sentence-navigation">
+                <button class="nav-arrow" onclick="navigateSentence(-1)">
+                    ← Previous
+                </button>
+                <span id="sentenceCounter"></span>
+                <button class="nav-arrow" onclick="navigateSentence(1)">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
+    
+   <!-- Floating Done Button -->
+<div id="floatingDone" class="floating-done-button" style="display: none;">
+    Done (<span id="selectedCount">0</span>)
+</div>
+
+<!-- Text Selection Modal -->
+<div id="textSelectionModal" class="text-selection-modal">
+    <h3>Select Text to Add Audio</h3>
+    <input type="text" 
+           class="search-input" 
+           id="textSearchAudio" 
+           placeholder="Search texts...">
+    <div class="text-selection-list" id="textSelectionList">
+        <!-- Text items will be populated here -->
+    </div>
+    <div class="button-container">
+        <button class="action-button cancel-button" onclick="closeTextSelection()">Cancel</button>
+    </div>
+</div>
+
+<!-- Timestamp Editor -->
+<div id="timestampEditor" class="timestamp-editor">
+    <h3>Synchronize Audio with Text</h3>
+    <div class="audio-controls">
+        <button onclick="playPauseAudio()">Play/Pause</button>
+        <button onclick="seekAudio(-2)">-2s</button>
+        <button onclick="seekAudio(2)">+2s</button>
+        <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+    </div>
+    <div id="timestampRows"></div>
+    <button onclick="saveTimestamps()">Save Timestamps</button>
+    <button onclick="closeTimestampEditor()">Cancel</button>
+</div>
+   
+    <script>
+ // URL Parameters and Constants
+const urlParams = new URLSearchParams(window.location.search);
+const currentDay = parseInt(urlParams.get('day')) || 1;
+
+// Global variables
+let vocabulary = {};
+let textLibrary = {};
+let currentWord = null;
+let currentElement = null;
+let sentenceMode = false;
+let sentences = [];
+let currentSentenceIndex = 0;
+let lastClickedSentenceIndex = 0;
+let currentOverlayWord = null;
+let currentOverlayElement = null;
+let translationVisible = false;
+let currentPage = 0;
+let pages = [];
+let touchStartX = null;
+let touchEndX = null;
+let audioElement = null;
+let timestamps = {};
+let currentAudioFile = null;
+let selectedTextId = null;
+let isMultiSelectMode = false;
+let selectedWords = new Set();
+let longPressTimeout;
+let initialX, initialY;
+let isPlaying = false;
+let currentAudioInterval;
+
+const SWIPE_THRESHOLD = 50;
+const CHARS_PER_PAGE = 450;
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    loadVocabulary();
+    loadTextLibrary();
+    setupEventListeners();
+    setupAudioHandlers();
+    
+    const draftText = localStorage.getItem('draftText');
+    if (draftText) {
+        try {
+            const draft = JSON.parse(draftText);
+            document.getElementById('textInput').value = draft.content || '';
+            document.getElementById('textTitle').value = draft.title || '';
+        } catch (e) {
+            document.getElementById('textInput').value = draftText;
+        }
+    }
+});
+
+// Event Listener Setup
+function setupEventListeners() {
+    // File input handlers
+    document.getElementById('loadTextInput').addEventListener('change', handleTextFileUpload);
+    document.getElementById('loadVocabInput').addEventListener('change', handleVocabFileUpload);
+    document.getElementById('loadAudioInput')?.addEventListener('change', handleAudioUpload);
+    document.getElementById('textSearchAudio')?.addEventListener('input', updateTextSelectionList);
+
+    // Multi-select mode handlers
+    const doneButton = document.getElementById('floatingDone');
+    doneButton.addEventListener('click', handleDoneButtonClick);
+
+    // Mouse events for desktop
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', () => clearTimeout(longPressTimeout));
+    document.addEventListener('mousemove', handleMouseMove);
+
+    // Touch events for mobile
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', () => clearTimeout(longPressTimeout));
+    document.addEventListener('touchmove', handleTouchMove);
+
+    // Escape key to cancel multi-select
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isMultiSelectMode) {
+            endMultiSelect();
+        }
+    });
+
+    // Click outside to cancel multi-select
+    document.addEventListener('click', (e) => {
+        if (isMultiSelectMode && 
+            !e.target.closest('span[onclick]') && 
+            !e.target.closest('.floating-done-button')) {
+            endMultiSelect();
+        }
+    });
+
+    // Search and filter handlers
+    document.getElementById('vocabularySearch')?.addEventListener('input', updateVocabularyTable);
+    document.getElementById('levelFilter')?.addEventListener('change', updateVocabularyTable);
+    document.getElementById('textSearch')?.addEventListener('input', updateTextLibraryTable);
+
+    // Add swipe navigation setup
+    setupSwipeListeners();
+
+    // Keyboard shortcuts
+    setupKeyboardShortcuts();
+    
+    // Rating overlay click handler
+   // Add these to your existing setupEventListeners function
+document.getElementById('ratingOverlay').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeRating();
+    }
+});
+
+document.querySelector('.rating-box').addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+
+    // Sentence mode overlay click handler
+    document.getElementById('sentenceModeOverlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSentenceMode();
+        }
+    });
+
+    // Modal click handlers
+    window.addEventListener('click', function(e) {
+        const textSelectionModal = document.getElementById('textSelectionModal');
+        if (e.target === textSelectionModal) {
+            closeTextSelection();
+        }
+    });
+
+    // Prevent default touch behavior
+    document.getElementById('readPage').addEventListener('touchmove', function(e) {
+        if (touchStartX !== null) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.getElementById('sentenceModeOverlay').addEventListener('touchmove', function(e) {
+        if (touchStartX !== null) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+}
+
+// SRT Processing Functions
+function parseSRT(srtContent) {
+    const entries = srtContent.trim().split(/\n\s*\n/);
+    return entries.map(entry => {
+        const lines = entry.trim().split('\n');
+        if (lines.length < 3) return null;
+        
+        const [index, timeCode, ...textLines] = lines;
+        const timeMatch = timeCode.match(/(\d{2}:\d{2}.\d+)\s*-->\s*(\d{2}:\d{2}.\d+)/);
+        if (!timeMatch) return null;
+
+        const [_, startTime, endTime] = timeMatch;
+        
+        return {
+            index: parseInt(index),
+            startTime: convertSRTTimeToSeconds(startTime),
+            endTime: convertSRTTimeToSeconds(endTime),
+            text: textLines.join(' ').trim()
+        };
+    }).filter(entry => entry !== null);
+}
+
+// Helper function to convert time to seconds
+function convertSRTTimeToSeconds(timeStr) {
+    const [mins, secs] = timeStr.split(':').map(Number);
+    return mins * 60 + secs;
+}
+
+// Helper function to match SRT with text
+function matchSRTWithText(srtEntries, textSentences) {
+    const matchedTimestamps = {};
+    
+    srtEntries.forEach((entry, index) => {
+        if (index < textSentences.length) {
+            matchedTimestamps[index] = {
+                start: entry.startTime,
+                end: entry.endTime
+            };
+        }
+    });
+
+    return matchedTimestamps;
+}
+
+// File Handling Functions
+async function handleTextFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        const title = file.name.replace('.txt', '');
+        
+        const textId = Date.now().toString();
+        const textData = {
+            id: textId,
+            title: title,
+            content: text,
+            dateCreated: new Date().toISOString()
+        };
+        
+        textLibrary[textId] = textData;
+        saveTextLibrary();
+
+        processText(text, title);
+        showPage('read');
+        showStatus('Text loaded successfully!');
+        
+        event.target.value = '';
+    } catch (error) {
+        console.error('Error reading text file:', error);
+        showStatus('Error loading text file');
+    }
+}
+
+async function handleVocabFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const content = await file.text();
+        const newVocabulary = JSON.parse(content);
+        
+        vocabulary = { ...vocabulary, ...newVocabulary };
+        localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+        
+        updateKnownWordsCount();
+        showStatus('Vocabulary loaded successfully!');
+        
+        event.target.value = '';
+    } catch (error) {
+        console.error('Error reading vocabulary file:', error);
+        showStatus('Error loading vocabulary file');
+    }
+}
+
+// Audio File Handling
+async function handleAudioUpload(audioFile, srtFile, textId) {
+    try {
+        // Read and process SRT file
+        const srtContent = await srtFile.text();
+        const srtEntries = parseSRT(srtContent);
+        if (!srtEntries || srtEntries.length === 0) {
+            throw new Error('Invalid SRT file format');
+        }
+
+        // Read audio file
+        const audioData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(audioFile);
+        });
+
+        // Get text content and ensure it exists
+        const textData = textLibrary[textId];
+        if (!textData) {
+            throw new Error('Text not found in library');
+        }
+
+        // Process text into sentences if not already done
+        if (!sentences || sentences.length === 0) {
+            sentences = textData.content.match(/[^.!?]+[.!?]+/g) || [];
+            sentences = sentences.map(s => s.trim());
+        }
+
+        // Match SRT with text sentences
+        const matchedTimestamps = matchSRTWithText(srtEntries, sentences);
+
+        // Update text library
+        textLibrary[textId] = {
+            ...textData,
+            audio: audioData,
+            timestamps: matchedTimestamps
+        };
+
+        // Save to local storage
+        saveTextLibrary();
+
+        // Update current audio if this is the active text
+        audioElement = new Audio(audioData);
+        timestamps = matchedTimestamps;
+        initializeAudio();
+
+        return {
+            success: true,
+            message: 'Audio and subtitles synchronized successfully!'
+        };
+    } catch (error) {
+        console.error('Error processing audio and SRT:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
+
+// Audio Selection UI
+function showTextSelection() {
+    const modal = document.getElementById('textSelectionModal');
+    updateTextSelectionList();
+    modal.style.display = 'block';
+}
+
+function updateTextSelectionList() {
+    const container = document.getElementById('textSelectionList');
+    const searchTerm = document.getElementById('textSearchAudio').value.toLowerCase();
+    
+    container.innerHTML = '';
+    
+    Object.entries(textLibrary)
+        .filter(([id, text]) => text.title.toLowerCase().includes(searchTerm))
+        .sort((a, b) => new Date(b[1].dateCreated) - new Date(a[1].dateCreated))
+        .forEach(([id, text]) => {
+            const div = document.createElement('div');
+            div.className = `text-selection-item ${text.audio ? 'has-audio' : ''}`;
+            div.innerHTML = `
+                <div class="text-info">
+                    <div class="text-title">${text.title}</div>
+                    <div class="text-date">${new Date(text.dateCreated).toLocaleDateString()}</div>
+                </div>
+                <div class="audio-status">
+                    ${text.audio ? 'Has audio' : 'No audio'}
+                </div>
+            `;
+            div.onclick = () => showAudioUploadModal(id);
+            container.appendChild(div);
+        });
+}
+
+function showAudioUploadModal(textId) {
+    selectedTextId = textId;
+    
+    const modal = document.createElement('div');
+    modal.className = 'audio-upload-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Add Audio to "${textLibrary[textId].title}"</h3>
+            <div class="upload-section">
+                <div class="file-upload">
+                    <label>Audio File:
+                        <input type="file" id="audioFileInput" accept="audio/*">
+                    </label>
+                    <span id="audioStatus">No file selected</span>
+                </div>
+                <div class="file-upload">
+                    <label>SRT File:
+                        <input type="file" id="srtFileInput" accept=".srt">
+                    </label>
+                    <span id="srtStatus">No file selected</span>
+                </div>
+            </div>
+            <div class="srt-preview" id="srtPreview"></div>
+            <div class="button-container">
+                <button id="syncButton" disabled>Synchronize</button>
+                <button onclick="closeAudioUploadModal()">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setupAudioUploadListeners();
+}
+
+function setupAudioUploadListeners() {
+    let audioFile = null;
+    let srtFile = null;
+    
+    const audioInput = document.getElementById('audioFileInput');
+    const srtInput = document.getElementById('srtFileInput');
+    const syncButton = document.getElementById('syncButton');
+    
+    audioInput.onchange = (e) => {
+        audioFile = e.target.files[0];
+        document.getElementById('audioStatus').textContent = audioFile ? audioFile.name : 'No file selected';
+        updateSyncButton();
+    };
+    
+    srtInput.onchange = async (e) => {
+        srtFile = e.target.files[0];
+        document.getElementById('srtStatus').textContent = srtFile ? srtFile.name : 'No file selected';
+        
+        if (srtFile) {
+            const content = await srtFile.text();
+            const preview = content.split('\n').slice(0, 6).join('\n');
+            document.getElementById('srtPreview').textContent = preview + '\n...';
+        }
+        
+        updateSyncButton();
+    };
+    
+    function updateSyncButton() {
+        syncButton.disabled = !(audioFile && srtFile);
+    }
+    
+    syncButton.onclick = async () => {
+        syncButton.disabled = true;
+        syncButton.textContent = 'Processing...';
+        
+        const result = await handleAudioUpload(audioFile, srtFile, selectedTextId);
+        
+        if (result.success) {
+            showStatus(result.message);
+            closeAudioUploadModal();
+            updateTextSelectionList();
+        } else {
+            showStatus(result.message, 5000);
+            syncButton.disabled = false;
+            syncButton.textContent = 'Synchronize';
+        }
+    };
+}
+
+function closeAudioUploadModal() {
+    const modal = document.querySelector('.audio-upload-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function closeTextSelection() {
+    document.getElementById('textSelectionModal').style.display = 'none';
+}
+
+// Audio Playback Functions
+function setupAudioHandlers() {
+    document.querySelectorAll('.audio-progress').forEach(progress => {
+        progress.addEventListener('click', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickPosition = (e.clientX - rect.left) / rect.width;
+            audioElement.currentTime = clickPosition * audioElement.duration;
+            updateAudioProgress();
+        });
+    });
+}
+
+function stopAudio() {
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        isPlaying = false;
+        updatePlayPauseButton();
+        clearInterval(currentAudioInterval);
+    }
+}
+
+function initializeAudio() {
+    if (!audioElement) return;
+    
+    audioElement.addEventListener('ended', () => {
+        isPlaying = false;
+        updatePlayPauseButton();
+        clearInterval(currentAudioInterval);
+    });
+
+    audioElement.addEventListener('loadedmetadata', () => {
+        updateAudioProgress();
+    });
+}
+
+function playPauseAudio() {
+    if (!audioElement) {
+        showStatus('No audio available for this text');
+        return;
+    }
+
+    if (isPlaying) {
+        audioElement.pause();
+        clearInterval(currentAudioInterval);
+    } else {
+        audioElement.play();
+        updateAudioProgress();
+        currentAudioInterval = setInterval(updateAudioProgress, 100);
+    }
+    
+    isPlaying = !isPlaying;
+    updatePlayPauseButton();
+}
+
+function updatePlayPauseButton() {
+    const buttons = document.querySelectorAll('button[onclick="playPauseAudio()"]');
+    buttons.forEach(button => {
+        button.textContent = isPlaying ? 'Pause' : 'Play';
+    });
+}
+
+function updateAudioProgress() {
+    if (!audioElement) return;
+    
+    const progressFills = document.querySelectorAll('.audio-progress-fill');
+    const currentTimeSpans = document.querySelectorAll('#currentTime');
+    const durationSpan = document.getElementById('duration');
+    
+    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+    
+    progressFills.forEach(fill => {
+        fill.style.width = `${progress}%`;
+    });
+    
+    currentTimeSpans.forEach(span => {
+        span.textContent = formatTime(audioElement.currentTime);
+    });
+    
+    if (durationSpan) {
+        durationSpan.textContent = formatTime(audioElement.duration);
+    }
+}
+
+function playSentenceAudio() {
+    if (!audioElement) {
+        showStatus('No audio available for this text');
+        return;
+    }
+
+    if (!timestamps || Object.keys(timestamps).length === 0) {
+        showStatus('No timestamps available for sentences');
+        return;
+    }
+
+    if (timestamps[currentSentenceIndex] === undefined) {
+        showStatus(`No timestamp for sentence ${currentSentenceIndex + 1}`);
+        return;
+    }
+
+    const timestamp = timestamps[currentSentenceIndex];
+    
+    stopAudio();
+    
+    audioElement.currentTime = timestamp.start;
+    audioElement.removeEventListener('timeupdate', checkSentenceEnd);
+    audioElement.addEventListener('timeupdate', checkSentenceEnd);
+    
+    audioElement.play();
+    isPlaying = true;
+    updatePlayPauseButton();
+    updateAudioProgress();
+}
+
+function checkSentenceEnd() {
+    if (!timestamps[currentSentenceIndex]) return;
+    
+    const timestamp = timestamps[currentSentenceIndex];
+    if (audioElement.currentTime >= timestamp.end) {
+        audioElement.pause();
+        isPlaying = false;
+        updatePlayPauseButton();
+        audioElement.removeEventListener('timeupdate', checkSentenceEnd);
+    }
+}
+
+// Text Processing Functions
+function processText(text, title = '') {
+    sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+    sentences = sentences.map(s => s.trim());
+    
+    pages = paginateText(sentences);
+    currentPage = 0;
+    
+    const titleElement = document.getElementById('textDisplayTitle');
+    titleElement.textContent = title || 'Untitled Text';
+    
+    // Reset audio state
+    audioElement = null;
+    timestamps = {};
+    
+    // Find the text data by title
+    const textData = Object.values(textLibrary).find(t => t.title === title);
+    if (textData?.audio) {
+        audioElement = new Audio(textData.audio);
+        timestamps = textData.timestamps || {};
+        initializeAudio();
+    }
+    
+    displayCurrentPage();
+}
+
+function paginateText(sentences) {
+    const pages = [];
+    let currentPageText = '';
+    let currentPageSentences = [];
+    
+    sentences.forEach((sentence, sentenceIndex) => {
+        if ((currentPageText + ' ' + sentence).length > CHARS_PER_PAGE) {
+            if (currentPageText) {
+                pages.push({
+                    text: currentPageText.trim(),
+                    sentences: currentPageSentences
+                });
+            }
+            currentPageText = sentence;
+            currentPageSentences = [sentenceIndex];
+        } else {
+            currentPageText += (currentPageText ? ' ' : '') + sentence;
+            currentPageSentences.push(sentenceIndex);
+        }
+    });
+    
+    if (currentPageText) {
+        pages.push({
+            text: currentPageText.trim(),
+            sentences: currentPageSentences
+        });
+    }
+    
+    return pages;
+}
+
+function displayCurrentPage() {
+    const display = document.getElementById('textDisplay');
+    const page = pages[currentPage];
+    
+    if (!page) return;
+    
+    const pageContent = page.sentences.map(sentenceIdx => {
+        const sentence = sentences[sentenceIdx];
+        const words = sentence.match(/\S+/g) || [];
+        
+        const processedWords = words.map(word => {
+            const originalWord = word;
+            const cleanWord = word.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+            const vocabEntry = vocabulary[cleanWord.toLowerCase()];
+            
+            let levelClass = 'word-new';
+            if (vocabEntry) {
+                levelClass = vocabEntry.level === 'untracked' ? 'word-untracked' : 
+                           (vocabEntry.level === 0 ? 'word-new' : `word-level-${vocabEntry.level}`);
+            }
+            
+            return `<span class="${levelClass}" 
+                data-sentence-index="${sentenceIdx}"
+                onclick="handleTextClick(this, '${encodeURIComponent(cleanWord)}')">${originalWord}</span>`;
+        }).join(' ');
+        
+        return `<span class="sentence" data-sentence-index="${sentenceIdx}">${processedWords}</span>`;
+    }).join(' ');
+    
+    display.innerHTML = `
+        <div class="pagination-controls">
+            <span>Page ${currentPage + 1} of ${pages.length}</span>
+        </div>
+        <div class="page-content">${pageContent}</div>
+    `;
+
+    const bottomNav = document.querySelector('.bottom-nav');
+    bottomNav.innerHTML = `
+        <button class="nav-button" onclick="changePage(-1)">Previous</button>
+        <button class="nav-button sentence-mode-toggle" onclick="toggleSentenceMode()">Sentence Mode</button>
+        ${currentPage === pages.length - 1 ? 
+            '<button class="nav-button" style="min-width: 70px; background: #bbf7d0; color: #166534; font-weight: 500;" onclick="showCompletionModal()">I\'m Done Reading</button>' : 
+            '<button class="nav-button" onclick="changePage(1)">Next</button>'
+        }
+    `;
+}
+
+function changePage(delta) {
+    const newPage = currentPage + delta;
+    if (newPage >= 0 && newPage < pages.length) {
+        currentPage = newPage;
+        displayCurrentPage();
+    }
+}
+
+// Navigation Functions
+function setupSwipeListeners() {
+    const readPage = document.getElementById('readPage');
+    readPage.addEventListener('touchstart', handleTouchStartSwipe);
+    readPage.addEventListener('touchmove', handleTouchMoveSwipe);
+    readPage.addEventListener('touchend', (e) => handleTouchEndSwipe(e, true));
+
+    const sentenceModeOverlay = document.getElementById('sentenceModeOverlay');
+    sentenceModeOverlay.addEventListener('touchstart', handleTouchStartSwipe);
+    sentenceModeOverlay.addEventListener('touchmove', handleTouchMoveSwipe);
+    sentenceModeOverlay.addEventListener('touchend', (e) => handleTouchEndSwipe(e, false));
+}
+
+function handleTouchStartSwipe(e) {
+    touchStartX = e.touches[0].clientX;
+}
+
+function handleTouchMoveSwipe(e) {
+    if (!touchStartX) return;
+    touchEndX = e.touches[0].clientX;
+}
+
+function handleTouchEndSwipe(e, isReadMode = true) {
+    if (!touchStartX || !touchEndX) {
+        touchStartX = null;
+        touchEndX = null;
+        return;
+    }
+
+    const swipeDistance = touchEndX - touchStartX;
+    
+    if (Math.abs(swipeDistance) >= SWIPE_THRESHOLD) {
+        if (isReadMode) {
+            if (swipeDistance > 0) {
+                changePage(-1);
+            } else {
+                changePage(1);
+            }
+        } else {
+            if (swipeDistance > 0) {
+                navigateSentence(-1);
+            } else {
+                navigateSentence(1);
+            }
+        }
+    }
+
+    touchStartX = null;
+    touchEndX = null;
+}
+
+// Translation Functions
+async function translateWord(word) {
+    try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=es|en`);
+        const data = await response.json();
+        return data.responseData.translatedText;
+    } catch (error) {
+        console.error('Translation error:', error);
+        return 'Translation failed';
+    }
+}
+
+async function translateSentence(sentence) {
+    try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentence)}&langpair=es|en`);
+        const data = await response.json();
+        return data.responseData.translatedText;
+    } catch (error) {
+        console.error('Translation error:', error);
+        return 'Translation failed';
+    }
+}
+
+// Mouse and Touch Event Handlers
+function handleMouseDown(e) {
+    const element = e.target.closest('span[onclick]');
+    if (!element || isMultiSelectMode) return;
+    
+    initialX = e.clientX;
+    initialY = e.clientY;
+    
+    longPressTimeout = setTimeout(() => {
+        handleLongPress(e);
+    }, 500);
+}
+
+function handleMouseMove(e) {
+    if (Math.abs(e.clientX - initialX) > 5 || Math.abs(e.clientY - initialY) > 5) {
+        clearTimeout(longPressTimeout);
+    }
+}
+
+function handleTouchStart(e) {
+    const element = e.target.closest('span[onclick]');
+    if (!element || isMultiSelectMode) return;
+    
+    const touch = e.touches[0];
+    initialX = touch.clientX;
+    initialY = touch.clientY;
+    
+    longPressTimeout = setTimeout(() => {
+        handleLongPress(e);
+    }, 500);
+}
+
+function handleTouchMove(e) {
+    const touch = e.touches[0];
+    if (Math.abs(touch.clientX - initialX) > 5 || Math.abs(touch.clientY - initialY) > 5) {
+        clearTimeout(longPressTimeout);
+    }
+}
+
+// Utility Functions
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function showStatus(message, duration = 3000) {
+    const status = document.getElementById('statusMessage');
+    status.textContent = message;
+    status.style.display = 'block';
+    setTimeout(() => {
+        status.style.display = 'none';
+    }, duration);
+}
+
+// Page Management
+function showPage(pageId) {
+    document.querySelectorAll('.page, .overlay-page').forEach(page => {
+        page.classList.remove('active');
+    });
+
+    if (pageId === 'home') {
+        document.getElementById('homePage').classList.add('active');
+    } else {
+        document.getElementById(pageId + 'Page').classList.add('active');
+    }
+}
+
+// Auto-save draft
+setInterval(() => {
+    const text = document.getElementById('textInput').value;
+    const title = document.getElementById('textTitle').value;
+    if (text.trim() || title.trim()) {
+        localStorage.setItem('draftText', JSON.stringify({
+            title: title,
+            content: text
+        }));
+    }
+}, 30000);
+// Vocabulary Management Functions
+function loadVocabulary() {
+    const savedVocab = localStorage.getItem('vocabulary');
+    if (savedVocab) {
+        vocabulary = JSON.parse(savedVocab);
+        updateKnownWordsCount();
+    }
+}
+
+function saveVocabulary() {
+    try {
+        localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+        
+        const blob = new Blob([JSON.stringify(vocabulary, null, 2)], 
+            { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'vocabulary.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showStatus('Progress saved!');
+    } catch (err) {
+        showStatus('Error saving progress');
+        console.error('Error:', err);
+    }
+}
+
+function updateKnownWordsCount() {
+    const knownWords = Object.values(vocabulary)
+        .filter(word => word.level >= 4).length;
+    document.getElementById('knownWordsCount').textContent = knownWords;
+}
+
+function saveTextLibrary() {
+    localStorage.setItem('textLibrary', JSON.stringify(textLibrary));
+}
+
+function loadTextLibrary() {
+    const savedLibrary = localStorage.getItem('textLibrary');
+    if (savedLibrary) {
+        textLibrary = JSON.parse(savedLibrary);
+    }
+}
+
+// Text Library Functions
+function showTextLibrary() {
+    showPage('textLibrary');
+    updateTextLibraryTable();
+}
+
+function updateTextLibraryTable() {
+    const tbody = document.querySelector('#textLibraryTable tbody');
+    const searchTerm = document.getElementById('textSearch')?.value?.toLowerCase() || '';
+    
+    tbody.innerHTML = '';
+    
+    Object.entries(textLibrary)
+        .filter(([id, text]) => text.title.toLowerCase().includes(searchTerm))
+        .sort((a, b) => new Date(b[1].dateCreated) - new Date(a[1].dateCreated))
+        .forEach(([id, text]) => {
+            const row = document.createElement('tr');
+            const date = new Date(text.dateCreated).toLocaleDateString();
+            row.innerHTML = `
+                <td>${text.title}</td>
+                <td>${date}</td>
+                <td>
+                    <button class="action-button" onclick="openText('${id}')">Open</button>
+                    <button class="action-button" onclick="deleteText('${id}')">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+}
+
+function openText(textId) {
+    const text = textLibrary[textId];
+    if (text) {
+        processText(text.content, text.title);
+        showPage('read');
+    }
+}
+
+function deleteText(textId) {
+    if (confirm('Are you sure you want to delete this text?')) {
+        delete textLibrary[textId];
+        saveTextLibrary();
+        updateTextLibraryTable();
+    }
+}
+
+// Vocabulary Overview Functions
+function showVocabularyOverview() {
+    showPage('vocabularyOverview');
+    updateVocabularyTable();
+}
+
+function updateVocabularyTable() {
+    const tbody = document.querySelector('#vocabularyTable tbody');
+    const searchTerm = document.getElementById('vocabularySearch').value.toLowerCase();
+    const levelFilter = document.getElementById('levelFilter').value;
+    
+    tbody.innerHTML = '';
+    
+    Object.entries(vocabulary)
+        .filter(([key, entry]) => {
+            const matchesSearch = entry.word.toLowerCase().includes(searchTerm) ||
+                (entry.definition || '').toLowerCase().includes(searchTerm);
+            const matchesLevel = levelFilter === 'all' || entry.level.toString() === levelFilter;
+            return matchesSearch && matchesLevel;
+        })
+        .sort((a, b) => a[1].word.localeCompare(b[1].word))
+        .forEach(([key, entry]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.word}</td>
+                <td>${entry.definition || 'No definition'}</td>
+                <td>${entry.level}</td>
+                <td>
+                    <button class="edit-definition" onclick="editDefinition('${entry.word}')">
+                        Edit
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+}
+
+function editDefinition(word) {
+    currentWord = word;
+    const entry = vocabulary[word.toLowerCase()];
+    
+    const overlay = document.getElementById('ratingOverlay');
+    overlay.querySelector('.selected-word').textContent = word;
+    overlay.querySelector('.word-translation').textContent = entry.definition || 'No definition';
+    overlay.querySelector('.custom-definition').value = entry.definition || '';
+    
+    overlay.style.display = 'block';
+}
+
+// Word Rating Functions
+async function handleWordClick(element, encodedWord) {
+    if (!encodedWord) return;
+    
+    const word = decodeURIComponent(encodedWord);
+    
+    if (isMultiSelectMode) {
+        handleWordSelection(element, word);
+        return;
+    }
+    
+    currentWord = word;
+    currentElement = element;
+    
+    const overlay = document.getElementById('ratingOverlay');
+    const wordEntry = vocabulary[word.toLowerCase()];
+    
+    overlay.querySelectorAll('.rating-button').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    if (wordEntry && wordEntry.level !== 'untracked' && wordEntry.level !== undefined) {
+        const currentLevelButton = overlay.querySelector(`.rating-button.level-${wordEntry.level}`);
+        if (currentLevelButton) {
+            currentLevelButton.classList.add('selected');
+        }
+    }
+    
+    overlay.querySelector('.selected-word').textContent = word;
+    overlay.style.display = 'block';
+    
+    if (wordEntry && wordEntry.definition) {
+        overlay.querySelector('.word-translation').textContent = wordEntry.definition;
+        overlay.querySelector('.custom-definition').value = wordEntry.definition;
+    } else {
+        overlay.querySelector('.word-translation').textContent = 'Loading...';
+        overlay.querySelector('.custom-definition').value = '';
+        
+        translateWord(word).then(translation => {
+            if (currentWord === word) {
+                overlay.querySelector('.word-translation').textContent = translation;
+            }
+        }).catch(error => {
+            console.error('Translation error:', error);
+            overlay.querySelector('.word-translation').textContent = 'Translation failed';
+        });
+    }
+}
+
+function updateWordRating(word, element, level) {
+    element?.classList.remove('word-new', 'word-level-1', 'word-level-2', 
+        'word-level-3', 'word-level-4', 'word-level-5', 'word-untracked');
+    
+    if (element) {
+        if (level === 'untracked') {
+            element.classList.add('word-untracked');
+        } else {
+            element.classList.add(level === 0 ? 'word-new' : `word-level-${level}`);
+        }
+    }
+    
+    const wordKey = word.toLowerCase();
+    
+    if (level === 'untracked') {
+        vocabulary[wordKey] = {
+            word: word,
+            level: 'untracked',
+            timestamp: new Date().toISOString()
+        };
+    } else {
+        const customDefinition = document.querySelector('.custom-definition').value;
+        const suggestedDefinition = document.querySelector('.word-translation').textContent;
+        
+        vocabulary[wordKey] = {
+            word: word,
+            level: level,
+            timestamp: new Date().toISOString(),
+            definition: customDefinition || suggestedDefinition,
+            isPhrase: word.includes(' ')
+        };
+
+        if (word.includes(' ')) {
+            const words = word.split(' ');
+            words.forEach(singleWord => {
+                const singleWordKey = singleWord.toLowerCase();
+                if (!vocabulary[singleWordKey]) {
+                    vocabulary[singleWordKey] = {
+                        word: singleWord,
+                        level: level,
+                        timestamp: new Date().toISOString(),
+                        definition: '',
+                        partOfPhrase: wordKey
+                    };
+                }
+            });
+        }
+    }
+
+    document.querySelectorAll('#textDisplay span, .sentence-content span').forEach(span => {
+        const spanText = span.textContent.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+        const spanLower = spanText.toLowerCase();
+        
+        if (word.includes(' ')) {
+            const words = word.toLowerCase().split(' ');
+            if (words.includes(spanLower)) {
+                if (level === 'untracked') {
+                    span.className = 'word-untracked';
+                } else {
+                    span.className = level === 0 ? 'word-new' : `word-level-${level}`;
+                }
+            }
+        } else if (spanLower === wordKey) {
+            if (level === 'untracked') {
+                span.className = 'word-untracked';
+            } else {
+                span.className = level === 0 ? 'word-new' : `word-level-${level}`;
+            }
+        }
+    });
+
+    updateKnownWordsCount();
+    localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+}
+
+// Add these in the Multi-Select Functions section (create this section if it doesn't exist)
+// Add after the Word Rating Functions section but before the Completion Functions section
+
+// Update the rateWord function to handle multiple words
+function rateWord(level) {
+    if (isMultiSelectMode && selectedWords.size > 0) {
+        selectedWords.forEach(word => {
+            // Find all elements with this word and update them
+            document.querySelectorAll(`span[onclick*="${encodeURIComponent(word)}"]`)
+                .forEach(element => {
+                    updateWordRating(word, element, level);
+                });
+        });
+        endMultiSelect();
+    } else if (currentWord) {
+        updateWordRating(currentWord, currentElement, level);
+    }
+    closeRating();
+}
+
+// Update markAsUntracked to handle multiple words
+function markAsUntracked() {
+    if (currentElement && currentWord) {
+        const wordKey = currentWord.toLowerCase();
+        
+        vocabulary[wordKey] = {
+            word: currentWord,
+            level: 'untracked',
+            timestamp: new Date().toISOString()
+        };
+
+        document.querySelectorAll('#textDisplay span, .sentence-content span, .sentence span').forEach(span => {
+            const spanWord = span.textContent.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+            if (spanWord.toLowerCase() === wordKey) {
+                span.className = 'word-untracked';
+            }
+        });
+
+        updateKnownWordsCount();
+        localStorage.setItem('vocabulary', JSON.stringify(vocabulary));
+    }
+    closeRating();
+}
+
+// Multi-Select Functions
+function startMultiSelect(x, y) {  // Changed parameters to accept coordinates
+    isMultiSelectMode = true;
+    selectedWords.clear();
+    
+    const doneButton = document.getElementById('floatingDone');
+    doneButton.style.display = 'block';
+    doneButton.style.left = `${x}px`;    // Position based on click coordinates
+    doneButton.style.top = `${y}px`;
+    
+    updateSelectedCount();
+}
+
+function handleLongPress(e) {
+    const element = e.target.closest('span[onclick]');
+    if (!element) return;
+    
+    const rect = element.getBoundingClientRect();
+    startMultiSelect(rect.left, rect.top - 40);  // Pass coordinates
+}
+
+function handleDoneButtonClick() {
+    if (selectedWords.size > 0) {
+        const combinedWord = Array.from(selectedWords).join(' ');
+        currentWord = combinedWord;
+        currentElement = document.querySelector('.word-selected');
+        
+        const overlay = document.getElementById('ratingOverlay');
+        overlay.querySelector('.selected-word').textContent = combinedWord;
+        overlay.style.display = 'block';
+        
+        translateWord(combinedWord).then(translation => {
+            if (currentWord === combinedWord) {
+                overlay.querySelector('.word-translation').textContent = translation;
+            }
+        }).catch(error => {
+            console.error('Translation error:', error);
+            overlay.querySelector('.word-translation').textContent = 'Translation failed';
+        });
+    }
+    endMultiSelect();
+}
+
+function handleWordSelection(element, word) {
+    if (!isMultiSelectMode) return;
+    
+    const cleanWord = word.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+    
+    if (selectedWords.has(cleanWord)) {
+        selectedWords.delete(cleanWord);
+        element.classList.remove('word-selected');
+    } else {
+        selectedWords.add(cleanWord);
+        element.classList.add('word-selected');
+    }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const countElement = document.getElementById('selectedCount');
+    if (countElement) {
+        countElement.textContent = selectedWords.size;
+    }
+}
+
+function endMultiSelect() {
+    isMultiSelectMode = false;
+    selectedWords.clear();
+    
+    document.getElementById('floatingDone').style.display = 'none';
+    
+    // Remove word-selected class from all elements
+    document.querySelectorAll('.word-selected').forEach(element => {
+        element.classList.remove('word-selected');
+    });
+    
+    updateSelectedCount();
+}
+
+// Update the rateWord function to handle multiple words
+function rateWord(level) {
+    if (isMultiSelectMode && selectedWords.size > 0) {
+        selectedWords.forEach(word => {
+            // Find all elements with this word and update them
+            document.querySelectorAll(`span[onclick*="${encodeURIComponent(word)}"]`)
+                .forEach(element => {
+                    updateWordRating(word, element, level);
+                });
+        });
+        endMultiSelect();
+    } else if (currentWord) {
+        updateWordRating(currentWord, currentElement, level);
+    }
+    closeRating();
+}
+
+// Update markAsUntracked to handle multiple words
+function markAsUntracked() {
+    if (isMultiSelectMode && selectedWords.size > 0) {
+        selectedWords.forEach(word => {
+            document.querySelectorAll(`span[onclick*="${encodeURIComponent(word)}"]`)
+                .forEach(element => {
+                    updateWordRating(word, element, 'untracked');
+                });
+        });
+        endMultiSelect();
+    } else if (currentWord) {
+        updateWordRating(currentWord, currentElement, 'untracked');
+    }
+    closeRating();
+}
+
+function closeRating() {
+    const overlay = document.getElementById('ratingOverlay');
+    overlay.style.display = 'none';
+    currentWord = null;
+    currentElement = null;
+}
+
+// Completion Functions
+function notifyCompletion() {
+    window.parent.postMessage({
+        type: 'exerciseComplete',
+        exercise: 'reading',
+        day: currentDay
+    }, '*');
+}
+
+function showCompletionModal() {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '3000';
+
+    const modalContent = document.createElement('div');
+    modalContent.style.background = 'white';
+    modalContent.style.padding = '30px';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.textAlign = 'center';
+    modalContent.innerHTML = `
+        <h2>Reading Complete!</h2>
+        <p>Great job finishing the text! 🎉</p>
+        <button class="button exercise-button" 
+                onclick="notifyCompletion()" 
+                style="margin-top: 20px; padding: 12px 24px; background: #2c3e50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500;">
+            Complete & Continue
+        </button>
+    `;
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+// Keyboard Shortcuts
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        if (document.getElementById('ratingOverlay').style.display === 'block') {
+            if (e.key >= '1' && e.key <= '5') {
+                rateWord(parseInt(e.key));
+            } else if (e.key === 'Escape') {
+                closeRating();
+            }
+        } else if (document.getElementById('sentenceModeOverlay').style.display === 'block') {
+            if (e.key === 'ArrowLeft') {
+                navigateSentence(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateSentence(1);
+            } else if (e.key === 'Escape') {
+                closeSentenceMode();
+            } else if (e.key === 't') {
+                toggleTranslation();
+            }
+        }
+    });
+}
+
+// Sentence Mode Functions
+function toggleSentenceMode() {
+    sentenceMode = !sentenceMode;
+    
+    if (sentenceMode) {
+        showSentenceOverlay(lastClickedSentenceIndex || 0);
+    } else {
+        closeSentenceMode();
+    }
+}
+
+async function showSentenceOverlay(index) {
+    currentSentenceIndex = index;
+    const overlay = document.getElementById('sentenceModeOverlay');
+    const sentence = sentences[index];
+    
+    const words = sentence.match(/\S+/g) || [];
+    const content = overlay.querySelector('.sentence-content');
+    content.innerHTML = words.map(word => {
+        const originalWord = word;
+        const cleanWord = word.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑA-Z\s]/g, '');
+        const vocabEntry = vocabulary[cleanWord.toLowerCase()];
+        
+        let levelClass = 'word-new';
+        if (vocabEntry) {
+            levelClass = vocabEntry.level === 'untracked' ? 'word-untracked' : 
+                       (vocabEntry.level === 0 ? 'word-new' : `word-level-${vocabEntry.level}`);
+        }
+
+        // Add word-selected class if word is in selectedWords set
+        if (isMultiSelectMode && selectedWords.has(cleanWord)) {
+            levelClass += ' word-selected';
+        }
+        
+        return `<span class="${levelClass}" 
+            onclick="handleOverlayWordClick(this, '${encodeURIComponent(cleanWord)}')">${originalWord}</span>`;
+    }).join(' ');
+    
+    overlay.style.display = 'block';
+    updateSentenceNavigation();
+    
+    const translationDiv = overlay.querySelector('.sentence-translation');
+    translationDiv.textContent = 'Translating...';
+    document.querySelector('.translation-section').classList.add('hidden');
+    translationVisible = false;
+    
+    translateSentence(sentence).then(translation => {
+        if (currentSentenceIndex === index) {
+            translationDiv.textContent = translation;
+        }
+    }).catch(error => {
+        console.error('Translation error:', error);
+        if (currentSentenceIndex === index) {
+            translationDiv.textContent = 'Translation failed';
+        }
+    });
+}
+
+function handleTextClick(element, encodedWord) {
+    if (touchStartX !== null) return;
+    
+    const word = decodeURIComponent(encodedWord);
+    const sentenceIndex = parseInt(element.closest('.sentence').dataset.sentenceIndex);
+    
+    if (isMultiSelectMode) {
+        handleWordSelection(element, word);
+        return;
+    }
+
+    if (sentenceMode && !isMultiSelectMode) {
+        showSentenceOverlay(sentenceIndex);
+        return;
+    }
+
+    handleWordClick(element, encodedWord);
+}
+
+function handleOverlayWordClick(element, encodedWord) {
+    if (!encodedWord) return;
+    
+    const word = decodeURIComponent(encodedWord);
+    
+    if (isMultiSelectMode) {
+        handleWordSelection(element, word);
+        return;
+    }
+    
+    currentWord = word;
+    currentElement = element;
+    
+    const overlay = document.getElementById('ratingOverlay');
+    const wordEntry = vocabulary[word.toLowerCase()];
+    
+    overlay.querySelectorAll('.rating-button').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    if (wordEntry && wordEntry.level !== 'untracked' && wordEntry.level !== undefined) {
+        const currentLevelButton = overlay.querySelector(`.rating-button.level-${wordEntry.level}`);
+        if (currentLevelButton) {
+            currentLevelButton.classList.add('selected');
+        }
+    }
+    
+    overlay.querySelector('.selected-word').textContent = word;
+    overlay.style.display = 'block';
+    
+    if (wordEntry && wordEntry.definition) {
+        overlay.querySelector('.word-translation').textContent = wordEntry.definition;
+        overlay.querySelector('.custom-definition').value = wordEntry.definition;
+    } else {
+        overlay.querySelector('.word-translation').textContent = 'Loading...';
+        overlay.querySelector('.custom-definition').value = '';
+        
+        translateWord(word).then(translation => {
+            if (currentWord === word) {
+                overlay.querySelector('.word-translation').textContent = translation;
+            }
+        }).catch(error => {
+            console.error('Translation error:', error);
+            overlay.querySelector('.word-translation').textContent = 'Translation failed';
+        });
+    }
+}
+
+function closeSentenceMode() {
+    stopAudio();
+    
+    document.getElementById('sentenceModeOverlay').style.display = 'none';
+    document.querySelectorAll('.sentence-highlight').forEach(el => {
+        el.classList.remove('sentence-highlight');
+    });
+    sentenceMode = false;
+}
+
+function toggleTranslation() {
+    translationVisible = !translationVisible;
+    const translationSection = document.querySelector('.translation-section');
+    translationSection.classList.toggle('hidden');
+}
+
+function updateSentenceNavigation() {
+    const counter = document.getElementById('sentenceCounter');
+    counter.textContent = `${currentSentenceIndex + 1} / ${sentences.length}`;
+}
+
+function navigateSentence(direction) {
+    stopAudio();
+    
+    const newIndex = currentSentenceIndex + direction;
+    if (newIndex >= 0 && newIndex < sentences.length) {
+        currentSentenceIndex = newIndex;
+        showSentenceOverlay(currentSentenceIndex);
+    }
+}
+</script>
+</body>
+</html>
