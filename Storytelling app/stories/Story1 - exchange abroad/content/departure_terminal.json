@@ -1,0 +1,44 @@
+{
+    "location": "departure_terminal",
+    "title": "International Departure Terminal",
+    "dialogues": [
+        {
+            "id": 0,
+            "speaker": "narrator",
+            "text": "La terminal de salidas internacionales está llena de actividad.",
+            "choices": [
+                {
+                    "id": "look",
+                    "text": "Mirar el panel de salidas",
+                    "description": "Describe what you see on the departure board and the atmosphere in the terminal",
+                    "nextEmotion": "normal",
+                    "nextDialogue": 1
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "speaker": "mom",
+            "text": "¿Estás seguro de que lo tienes todo?",
+            "momNextEmotion": "worried",
+            "choices": [
+                {
+                    "id": "check",
+                    "text": "Volver a revisar las maletas",
+                    "description": "Write about checking your bags and what items you're verifying",
+                    "nextEmotion": "normal",
+                    "nextLocation": "security_check",
+                    "nextDialogue": 0
+                },
+                {
+                    "id": "confident",
+                    "text": "Lo he empacado todo",
+                    "description": "Write about your packing preparation and why you feel confident",
+                    "nextEmotion": "happy",
+                    "nextLocation": "security_check",
+                    "nextDialogue": 0
+                }
+            ]
+        }
+    ]
+}

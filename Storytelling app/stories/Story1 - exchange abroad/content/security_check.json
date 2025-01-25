@@ -1,0 +1,69 @@
+{
+    "location": "security_check",
+    "title": "Security Checkpoint",
+    "dialogues": [
+        {
+            "id": 0,
+            "speaker": "narrator",
+            "text": "El control de seguridad está adelante. Una larga fila de viajeros espera pacientemente.",
+            "choices": [
+                {
+                    "id": "prepare",
+                    "text": "Empezar a prepararse",
+                    "description": "Write about how you're preparing for the security check and what items you need to get ready",
+                    "nextEmotion": "normal",
+                    "nextDialogue": 1
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "speaker": "security_officer",
+            "text": "Por favor, saque su portátil y cualquier líquido de su bolsa.",
+            "choices": [
+                {
+                    "id": "remove_items",
+                    "text": "Sacar el portátil y los productos de aseo",
+                    "description": "Write about removing your laptop and liquids from your bag, describing the process",
+                    "nextEmotion": "normal",
+                    "nextDialogue": 2
+                },
+                {
+                    "id": "forget_items",
+                    "text": "Pasar la bolsa directamente",
+                    "description": "Write about your decision to send the bag through without removing items and why",
+                    "nextEmotion": "worried",
+                    "nextDialogue": 3
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "speaker": "security_officer",
+            "text": "Perfecto, puede pasar por el escáner.",
+            "choices": [
+                {
+                    "id": "proceed",
+                    "text": "Pasar por el escáner",
+                    "description": "Write about walking through the security scanner and how you feel",
+                    "nextLocation": "airplane",
+                    "nextDialogue": 0
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "speaker": "security_officer",
+            "text": "Necesito que vuelva y saque esos objetos de su bolsa.",
+            "choices": [
+                {
+                    "id": "comply",
+                    "text": "Sacar los objetos",
+                    "description": "Write about returning to remove the items and your reaction to the situation",
+                    "nextEmotion": "normal",
+                    "nextDialogue": 2
+                }
+            ]
+        }
+    ]
+}
