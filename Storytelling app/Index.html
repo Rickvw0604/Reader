@@ -384,6 +384,12 @@
             display: none;
             margin-top: 20px;
         }
+        .no-stories {
+    color: white;
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+}
     </style>
 </head>
 <body>
@@ -393,14 +399,14 @@
     <div class="api-status" id="api-status">
         Checking API connection...
     </div>
-    <div class="story-selection" id="story-selection">
-        <!-- Stories will be loaded here dynamically -->
-    </div>
     <div class="mode-selection">
         <button class="mode-button" data-mode="regular">Regular Mode</button>
         <button class="mode-button" data-mode="listening">Listening Mode</button>
         <button class="mode-button" data-mode="writing">Writing Mode</button>
         <button class="mode-button" data-mode="advanced">Advanced Mode</button>
+    </div>
+    <div class="story-selection" id="story-selection" style="display: none;">
+        <!-- Stories will be loaded here dynamically -->
     </div>
     <button class="continue-button" id="continue-button">Start Game</button>
 </div>
@@ -583,7 +589,7 @@
 
         // Game state
 let gameState = {
-    currentStoryId: null,      // New
+    currentStoryId: null,
     currentLocation: null,
     currentDialogue: 0,
     currentText: '',
@@ -596,96 +602,132 @@ let gameState = {
     selectedDescription: null,
     isCheckingGrammar: false,
     lastUserAnswer: '',
-    availableStories: []       // New
+    availableStories: []
 };
 
         // Audio Controller
-        class AudioController {
-            constructor() {
-                this.narrationAudio = null;
-                this.ambientAudio = new Audio();
-                this.ambientAudio.loop = true;
-                this.narrationVolume = 1.0;
-                this.ambientVolume = 0.05;
-            }
+class AudioController {
+    constructor() {
+        this.narrationAudio = null;
+        this.ambientAudio = new Audio();
+        this.ambientAudio.loop = true;
+        this.narrationVolume = 1.0;
+        this.ambientVolume = 0.05;
+    }
 
-            playNarration(location, dialogueId) {
-                this.stopNarration();
-                this.narrationAudio = new Audio(`audio/narration/${location}/dialogue${dialogueId}.mp3`);
-                this.narrationAudio.volume = this.narrationVolume;
-                
-                this.narrationAudio.onerror = () => {
-                    console.warn(`Audio file for ${location} dialogue ${dialogueId} not found`);
-                };
-                
-                const playPromise = this.narrationAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.warn("Narration audio playback failed:", error);
-                    });
-                }
-            }
+    playNarration(location, dialogueId) {
+        this.stopNarration();
+        const storyPath = gameState.currentStoryId ? `stories/${gameState.currentStoryId}/` : '';
+        this.narrationAudio = new Audio(`${storyPath}audio/narration/${location}/dialogue${dialogueId}.mp3`);
+        this.narrationAudio.volume = this.narrationVolume;
+        
+        this.narrationAudio.onerror = () => {
+            console.warn(`Audio file for ${location} dialogue ${dialogueId} not found`);
+        };
+        
+        const playPromise = this.narrationAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.warn("Narration audio playback failed:", error);
+            });
+        }
+    }
 
-            playAmbient(location) {
-                if (!this.ambientAudio.src || this.ambientAudio.paused) {
-                    this.ambientAudio.src = `audio/ambient/${location}.mp3`;
-                    this.ambientAudio.volume = this.ambientVolume;
-                    
-                    this.ambientAudio.onerror = () => {
-                        console.warn(`Ambient audio file for ${location} not found`);
-                    };
-                    
-                    const playPromise = this.ambientAudio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.warn("Ambient audio playback failed:", error);
-                        });
-                    }
-                }
-            }
-
-            stopNarration() {
-                if (this.narrationAudio) {
-                    this.narrationAudio.pause();
-                    this.narrationAudio.currentTime = 0;
-                }
-            }
-
-            stopAmbient() {
-                this.ambientAudio.pause();
-                this.ambientAudio.currentTime = 0;
+    playAmbient(location) {
+        if (!this.ambientAudio.src || this.ambientAudio.paused) {
+            const storyPath = gameState.currentStoryId ? `stories/${gameState.currentStoryId}/` : '';
+            this.ambientAudio.src = `${storyPath}audio/ambient/${location}.mp3`;
+            this.ambientAudio.volume = this.ambientVolume;
+            
+            this.ambientAudio.onerror = () => {
+                console.warn(`Ambient audio file for ${location} not found`);
+            };
+            
+            const playPromise = this.ambientAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn("Ambient audio playback failed:", error);
+                });
             }
         }
-        
-        function parseStoryFolder(folderName) {
-    const storyMatch = folderName.match(/^story(\d+)\s*-\s*(.+)$/i);
-    if (storyMatch) {
-        return {
-            id: `Story${storyMatch[1]}`,
-            number: parseInt(storyMatch[1]),
-            title: storyMatch[2].trim(),
-            folderName: folderName
-        };
     }
-    return null;
+
+    stopNarration() {
+        if (this.narrationAudio) {
+            this.narrationAudio.pause();
+            this.narrationAudio.currentTime = 0;
+        }
+    }
+
+    stopAmbient() {
+        this.ambientAudio.pause();
+        this.ambientAudio.currentTime = 0;
+    }
 }
 
 async function loadAvailableStories() {
     try {
         const response = await fetch('stories/');
-console.log('Raw response:', await response.text());
-        const folders = await response.text();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
-        gameState.availableStories = folders
-            .split('\n')
-            .filter(folder => folder.trim())  // Remove empty lines
-            .map(folder => parseStoryFolder(folder))
+        const text = await response.text();
+        console.log('Directory listing response:', text);
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'));
+        
+        const stories = links
+            .map(link => {
+                const href = link.getAttribute('href');
+                if (!href) return null;
+                
+                const match = href.match(/^Story(\d+)\s*-\s*(.+?)\/?$/i);
+                if (!match) return null;
+                
+                return {
+                    id: `Story${match[1]}`,
+                    number: parseInt(match[1]),
+                    title: match[2].replace(/-/g, ' ').trim(),
+                    folderName: href.replace(/\/$/, '')
+                };
+            })
             .filter(story => story !== null)
             .sort((a, b) => a.number - b.number);
-            
-        return gameState.availableStories;
+
+        console.log('Found stories:', stories);
+        
+        // Update the UI based on whether stories were found
+        const storySelection = document.getElementById('story-selection');
+        const gameTitle = document.querySelector('.game-title');
+        
+        gameTitle.textContent = "Choose a Story";
+        
+        if (stories && stories.length > 0) {
+            storySelection.innerHTML = '';
+            stories.forEach(story => {
+                const btn = document.createElement('button');
+                btn.className = 'story-button';
+                btn.textContent = story.title;
+                btn.onclick = () => {
+                    const allBtns = document.querySelectorAll('.story-button');
+                    allBtns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    gameState.currentStoryId = story.id;
+                };
+                storySelection.appendChild(btn);
+            });
+        } else {
+            storySelection.innerHTML = '<div class="no-stories">No stories found.</div>';
+        }
+        
+        return stories;
     } catch (error) {
         console.error('Error loading stories:', error);
+        const storySelection = document.getElementById('story-selection');
+        storySelection.innerHTML = '<div class="no-stories">No stories found.</div>';
         return [];
     }
 }
@@ -837,10 +879,18 @@ console.log('Raw response:', await response.text());
         });
 
 continueButton.addEventListener('click', () => {
-    if (gameState.selectedMode && gameState.currentStoryId) {
-        startScreen.style.display = 'none';
-        gameContainer.style.display = 'block';
-        loadLocation('departure_terminal');
+    if (gameState.selectedMode) {
+        const modeSelection = document.querySelector('.mode-selection');
+        modeSelection.style.display = 'none';
+        document.querySelector('.game-title').textContent = "Choose a Story";
+        document.querySelector('.story-selection').style.display = 'flex';
+        continueButton.onclick = () => {
+            if (gameState.currentStoryId) {
+                startScreen.style.display = 'none';
+                gameContainer.style.display = 'block';
+                loadLocation('departure_terminal');
+            }
+        };
     }
 });
 
@@ -1025,9 +1075,10 @@ function updatePortraits() {
         }
     }
 
-    // Update only NPC portraits
-    momPortrait.src = `images/characters/mom/${gameState.momEmotion}.png`;
-    // Add any other NPC portrait updates here
+    const storyPath = gameState.currentStoryId ? `stories/${gameState.currentStoryId}/` : '';
+    momPortrait.src = `${storyPath}images/characters/mom/${gameState.momEmotion}.png`;
+    document.querySelector('#security-officer-portrait').src = 
+        `${storyPath}images/characters/security_officer/normal.png`;
 }
 
         function updateSpeakerLabel() {
