@@ -1,1 +1,25 @@
-
+{
+    "name": "Common Spanish Verbs",
+    "cards": [
+        {
+            "front": "ser",
+            "back": "zijn"
+        },
+        {
+            "front": "estar",
+            "back": "zijn (tijdelijke toestand)"
+        },
+        {
+            "front": "haber",
+            "back": "hebben (hulpwerkwoord)"
+        },
+        {
+            "front": "tener",
+            "back": "hebben"
+        },
+        {
+            "front": "hacer",
+            "back": "maken/doen"
+        }
+    ]
+}
