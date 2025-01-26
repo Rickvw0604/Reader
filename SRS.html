@@ -472,6 +472,7 @@ body {
     </div>
 
     <script>
+      const BASE_PATH = '/Reader';
       const urlParams = new URLSearchParams(window.location.search);
 const currentDay = parseInt(urlParams.get('day')) || 1;
     // Constants for SRS algorithm
@@ -488,6 +489,7 @@ const currentDay = parseInt(urlParams.get('day')) || 1;
     let currentDeck = null;
     let currentCard = null;
     let tempCards = [];
+    let navigationStack = [];
     let longPressTimer;
     const LONG_PRESS_DURATION = 500;
     let isLongPress = false;
@@ -507,8 +509,15 @@ const currentDay = parseInt(urlParams.get('day')) || 1;
     }
 
     // Initialize app
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         loadDecks();
+        window.addEventListener('popstate', function(event) {
+    if (navigationStack.length > 0) {
+        event.preventDefault();
+        const currentOverlay = navigationStack.pop();
+        hideOverlay(currentOverlay);
+    }
+});
         updateDecksList();
     });
 // Card class
@@ -766,62 +775,124 @@ getDueCards() {
     }
 
     // Storage functions
-    function loadDecks() {
-        const savedDecks = localStorage.getItem('srs_decks');
-        if (savedDecks) {
-            const parsed = JSON.parse(savedDecks);
-            decks = Object.fromEntries(
-                Object.entries(parsed).map(([id, deck]) => {
-                    const newDeck = new Deck(deck.name);
-                    Object.assign(newDeck, {
-                        id: deck.id,
-                        created: new Date(deck.created),
-                        lastReview: deck.lastReview ? new Date(deck.lastReview) : null,
-                        newCardsToday: deck.newCardsToday || 0,
-                        totalReviewsToday: deck.totalReviewsToday || 0,
-                        lastSyncDate: deck.lastSyncDate || new Date().toISOString(),
-                        lastMaintenanceDate: deck.lastMaintenanceDate || new Date().toISOString()
+async function loadDecks() {
+    // Load decks from localStorage first
+    const savedDecks = localStorage.getItem('srs_decks');
+    if (savedDecks) {
+        const parsed = JSON.parse(savedDecks);
+        decks = Object.fromEntries(
+            Object.entries(parsed).map(([id, deck]) => {
+                const newDeck = new Deck(deck.name);
+                Object.assign(newDeck, {
+                    id: deck.id,
+                    created: new Date(deck.created),
+                    lastReview: deck.lastReview ? new Date(deck.lastReview) : null,
+                    newCardsToday: deck.newCardsToday || 0,
+                    totalReviewsToday: deck.totalReviewsToday || 0,
+                    lastSyncDate: deck.lastSyncDate || new Date().toISOString(),
+                    lastMaintenanceDate: deck.lastMaintenanceDate || new Date().toISOString()
+                });
+                
+                Object.values(deck.cards).forEach(cardData => {
+                    const card = new Card(cardData.front, cardData.back);
+                    Object.assign(card, {
+                        ...cardData,
+                        dueDate: new Date(cardData.dueDate),
+                        lastReviewDate: cardData.lastReviewDate || new Date().toISOString()
                     });
-                    
-                    Object.values(deck.cards).forEach(cardData => {
+                    newDeck.addCard(card);
+                });
+                
+                return [id, newDeck];
+            })
+        );
+    }
+
+    // Load decks from filesystem
+    try {
+        const response = await fetch(`${BASE_PATH}/decks/`);
+        if (!response.ok) {
+            console.warn('No decks directory found');
+            return;
+        }
+
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'));
+        
+        // Process each deck folder
+        for (const link of links) {
+            const href = link.getAttribute('href');
+            if (!href || href === '../' || !href.endsWith('/')) continue;
+
+            const deckName = href.replace(/\/$/, '');
+            try {
+                const deckResponse = await fetch(`${BASE_PATH}/decks/${deckName}/deck.json`);
+                if (!deckResponse.ok) continue;
+
+                const deckData = await deckResponse.json();
+                const newDeck = new Deck(deckData.name || deckName.replace(/-/g, ' '));
+                
+                // Set deck properties
+                Object.assign(newDeck, {
+                    id: `fs-${deckName}`,
+                    created: new Date(),
+                    isFileSystemDeck: true,
+                    path: `${BASE_PATH}/decks/${deckName}`
+                });
+
+                // Add cards from deck.json
+                if (Array.isArray(deckData.cards)) {
+                    deckData.cards.forEach(cardData => {
                         const card = new Card(cardData.front, cardData.back);
-                        Object.assign(card, {
-                            ...cardData,
-                            dueDate: new Date(cardData.dueDate),
-                            lastReviewDate: cardData.lastReviewDate || new Date().toISOString()
-                        });
+                        if (cardData.image) {
+                            // Check if image is in deck's image folder or shared
+                            card.image = cardData.image.startsWith('shared/') 
+                                ? `${BASE_PATH}/${cardData.image}`
+                                : `${newDeck.path}/images/${cardData.image}`;
+                        }
                         newDeck.addCard(card);
                     });
-                    
-                    return [id, newDeck];
-                })
-            );
+                }
+
+                decks[newDeck.id] = newDeck;
+            } catch (error) {
+                console.warn(`Error loading deck ${deckName}:`, error);
+            }
         }
+    } catch (error) {
+        console.error('Error loading filesystem decks:', error);
     }
+}
 
     function saveDecks() {
         localStorage.setItem('srs_decks', JSON.stringify(decks));
     }
 // UI functions
-    function showOverlay(overlayId) {
-        document.querySelectorAll('.overlay-page').forEach(overlay => {
-            overlay.classList.remove('active');
-        });
-        document.getElementById(overlayId + 'Overlay').classList.add('active');
+function showOverlay(overlayId) {
+    document.querySelectorAll('.overlay-page').forEach(overlay => {
+        overlay.classList.remove('active');
+    });
+    document.getElementById(overlayId + 'Overlay').classList.add('active');
 
-        if (overlayId === 'decks') {
-            updateDecksList();
-        }
+    if (overlayId === 'decks') {
+        updateDecksList();
     }
+    
+    navigationStack.push(overlayId);
+    history.pushState({}, '');
+}
 
-    function hideOverlay(overlayId) {
-        document.getElementById(overlayId + 'Overlay').classList.remove('active');
-        if (overlayId === 'study') {
-            studyState.showingAnswer = false;
-            studyState.cardsToReview = [];
-            currentCard = null;
-        }
+function hideOverlay(overlayId) {
+    document.getElementById(overlayId + 'Overlay').classList.remove('active');
+    navigationStack = navigationStack.filter(item => item !== overlayId);
+    if (overlayId === 'study') {
+        studyState.showingAnswer = false;
+        studyState.cardsToReview = [];
+        currentCard = null;
     }
+}
 
     function updateStudyStats() {
         if (!currentDeck || !studyState.cardsToReview) return;
